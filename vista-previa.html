@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MEJR Timesheet · Vista de diseño</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <link href="assets/css/mejr-marca.css" rel="stylesheet">
+  <style>
+    .preview-toolbar { background: #fff; border-bottom: 1px solid #d8e2e7; }
+    .preview-toolbar .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+    .preview-toolbar p { margin: 0; font-size: 12px; color: #596d78; }
+    .preview-toolbar nav { display: flex; gap: 5px; flex-wrap: wrap; }
+    .preview-toolbar a { font-size: 12px; padding: 5px 10px; }
+    body.mejr-login main.container { min-height: calc(100vh - 57px); }
+  </style>
+</head>
+<body class="bg-light">
+  <div id="app"></div>
+  <script>
+    'use strict';
+    const query = new URLSearchParams(location.search);
+    const idioma = query.get('idioma') === 'en' ? 'en' : 'es';
+    const vista = ['ingreso', 'admin', 'consultor', 'usuarios'].includes(query.get('vista')) ? query.get('vista') : 'ingreso';
+    document.documentElement.lang = idioma;
+    const t = (es, en) => idioma === 'en' ? en : es;
+    const url = (screen, lang = idioma) => '?vista=' + screen + '&idioma=' + lang;
+    const system = 'https://localhost:8890/NAMP/';
+    const languages = () => `<nav aria-label="${t('Idioma', 'Language')}"><div class="btn-group" role="group" aria-label="${t('Idioma', 'Language')}"><a href="${url(vista, 'es')}" lang="es" class="btn btn-sm ${idioma === 'es' ? 'btn-dark' : 'btn-outline-secondary'}" ${idioma === 'es' ? 'aria-current="true"' : ''}>Español</a><a href="${url(vista, 'en')}" lang="en" class="btn btn-sm ${idioma === 'en' ? 'btn-dark' : 'btn-outline-secondary'}" ${idioma === 'en' ? 'aria-current="true"' : ''}>English</a></div></nav>`;
+    const toolbar = `<div class="preview-toolbar"><div class="container"><p>${t('Vista de diseño · datos de ejemplo', 'Design preview · sample data')}</p><nav aria-label="${t('Pantallas de la vista previa', 'Preview screens')}">${[['ingreso', t('Ingreso', 'Sign in')], ['admin', t('Administración', 'Administration')], ['consultor', t('Consultor', 'Consultant')], ['usuarios', t('Usuarios', 'Users')]].map(([screen, title]) => `<a href="${url(screen)}" class="btn btn-sm ${vista === screen ? 'btn-dark' : 'btn-outline-secondary'}" ${vista === screen ? 'aria-current="page"' : ''}>${title}</a>`).join('')}</nav></div></div>`;
+    function header(consultor = false) {
+      return `<header class="bg-white border-bottom"><div class="container py-3 d-flex flex-wrap gap-3 justify-content-between align-items-center"><p class="fw-bold mb-0">MEJR CONSULTING</p><div class="text-end"><p class="fw-semibold mb-0">${consultor ? 'Ana María Pérez' : 'Marco Silva'}</p><span class="small text-secondary">${consultor ? t('Panel del consultor', 'Consultant dashboard') : t('Panel de administración', 'Administration dashboard')}</span></div></div></header>`;
+    }
+    function login() {
+      return `<main class="container"><div class="row justify-content-center align-items-center min-vh-100 py-5"><div class="col-12 col-sm-9 col-md-7 col-lg-5 col-xl-4"><div class="d-flex justify-content-end mb-4">${languages()}</div><header class="mb-4"><p class="fw-bold mb-1">MEJR CONSULTING</p><p class="text-secondary small mb-0">${t('Registro de horas', 'Time tracking')}</p></header><section class="bg-white border rounded p-4"><h1 class="h4 mb-2">${t('Iniciar sesión', 'Sign in')}</h1><p class="text-secondary small mb-4">${t('Ingresa con tu cuenta asignada.', 'Sign in with your assigned account.')}</p><div class="mb-3"><label for="usuario" class="form-label">${t('Usuario', 'Username')}</label><input id="usuario" class="form-control" autocomplete="off" readonly aria-label="${t('Usuario de ejemplo', 'Sample username')}"></div><div class="mb-4"><label for="password" class="form-label">${t('Contraseña', 'Password')}</label><div class="input-group"><input id="password" type="password" class="form-control" readonly autocomplete="off"><button type="button" id="toggle-password" class="btn btn-outline-secondary" aria-controls="password" aria-pressed="false">${t('Mostrar', 'Show')}</button></div></div><a href="${system}login.php" class="btn btn-dark w-100">${t('Ingresar', 'Sign in')}</a><details class="small text-secondary mt-3"><summary>${t('Olvidé mi contraseña', 'Forgot my password')}</summary><p class="mt-2 mb-0">${t('Solicita el restablecimiento de tu contraseña a administración.', 'Ask your administrator to reset your password.')}</p></details></section><footer class="text-center text-secondary small mt-4">MEJR Consulting · Timesheet</footer></div></div></main>`;
+    }
+    function dashboard(consultor) {
+      const links = consultor ? [
+        ['mis-proyectos.php', t('Mis proyectos', 'My projects')],
+        ['mis-horas.php', t('Mis horas', 'My hours')],
+        ['mis-reportes.php', t('Mi reporte mensual', 'My monthly report')],
+        ['cambiar-clave.php', t('Cambiar contraseña', 'Change password')]
+      ] : [
+        ['usuarios.php', t('Usuarios', 'Users')],
+        ['clientes.php', t('Clientes', 'Clients')],
+        ['proyectos.php', t('Proyectos', 'Projects')],
+        ['asignaciones.php', t('Asignaciones', 'Assignments')],
+        ['horas-admin.php', t('Horas registradas', 'Time entries')],
+        ['cambiar-clave.php', t('Cambiar contraseña', 'Change password')]
+      ];
+      return `${header(consultor)}<main class="container py-4"><div class="d-flex justify-content-end mb-3">${languages()}</div><section class="bg-white border rounded p-4"><h1 class="h4">${consultor ? t('Panel del consultor', 'Consultant dashboard') : t('Panel de administración', 'Administration dashboard')}</h1><p class="text-secondary">${t('Has iniciado sesión correctamente.', 'You have signed in successfully.')}</p>${links.map(([path, label], i) => `<a href="${path === 'usuarios.php' ? url('usuarios') : system + path}" class="btn ${i === 0 ? 'btn-dark' : 'btn-outline-dark'} mb-3">${label}</a>`).join('\n')}<div class="mt-3"><a href="${url('ingreso')}" class="btn btn-outline-secondary">${t('Cerrar sesión', 'Sign out')}</a></div></section></main>`;
+    }
+    function users() {
+      return `${header()}<main class="container py-4"><div class="d-flex justify-content-between align-items-center mb-3"><a href="${url('admin')}" class="btn btn-outline-secondary">${t('Volver al panel', 'Back to dashboard')}</a>${languages()}</div><section class="bg-white border rounded p-4"><h1 class="h4">${t('Usuarios', 'Users')}</h1><p class="text-secondary">${t('Administra el acceso de los consultores. Desactivar una cuenta conserva sus horas y asignaciones.', 'Manage consultant access. Deactivating an account preserves its hours and assignments.')}</p><a href="${system}usuarios-crear.php" class="btn btn-dark mb-3">${t('Crear consultor', 'Create consultant')}</a><div class="mb-4"><label for="buscar" class="form-label">${t('Buscar consultor', 'Find a consultant')}</label><div class="row g-2"><div class="col-md-7"><input type="search" id="buscar" class="form-control" placeholder="${t('Nombre, apellido o usuario', 'First name, last name or username')}"></div><div class="col-auto"><button type="button" id="buscar-demo" class="btn btn-dark">${t('Buscar', 'Search')}</button></div><div class="col-auto"><button type="button" id="limpiar-demo" class="btn btn-outline-secondary">${t('Limpiar', 'Clear')}</button></div></div></div><div class="table-responsive"><table class="table align-middle mb-0"><caption>${t('Listado visible solo para administración.', 'This list is visible to administrators only.')}</caption><thead><tr>${[t('Nombre y apellido', 'Full name'), t('Especialidad', 'Specialty'), t('Usuario', 'Username'), t('Rol', 'Role'), t('Estado', 'Status'), t('Acción', 'Action')].map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody><tr data-sample-user="jorge blanco jorge.blanco"><td>Jorge Blanco</td><td>SAP ABAP</td><td>jorge.blanco</td><td>${t('Consultor', 'Consultant')}</td><td>${t('Activo', 'Active')}</td><td><a class="btn btn-sm btn-outline-secondary" href="${system}usuarios.php">${t('Editar', 'Edit')}</a></td></tr><tr data-sample-user="ana maria perez ana.perez"><td>Ana María Pérez</td><td>SAP FI/CO</td><td>ana.perez</td><td>${t('Consultor', 'Consultant')}</td><td>${t('Activo', 'Active')}</td><td><a class="btn btn-sm btn-outline-secondary" href="${system}usuarios.php">${t('Editar', 'Edit')}</a></td></tr></tbody></table><p id="sin-resultados" hidden class="text-secondary mt-3">${t('No se encontraron usuarios para esta búsqueda.', 'No users match this search.')}</p></div></section></main>`;
+    }
+    document.body.className = 'bg-light' + (vista === 'ingreso' ? ' mejr-login' : ['admin', 'consultor'].includes(vista) ? ' mejr-panel' : '');
+    document.getElementById('app').outerHTML = toolbar + (vista === 'ingreso' ? login() : vista === 'usuarios' ? users() : dashboard(vista === 'consultor'));
+    const showPassword = document.getElementById('toggle-password');
+    if (showPassword) showPassword.addEventListener('click', () => {
+      const field = document.getElementById('password');
+      const visible = field.type === 'password';
+      field.type = visible ? 'text' : 'password';
+      showPassword.textContent = visible ? t('Ocultar', 'Hide') : t('Mostrar', 'Show');
+      showPassword.setAttribute('aria-pressed', String(visible));
+    });
+    const search = document.getElementById('buscar');
+    const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    function filter() {
+      const words = normalize(search.value).split(/\s+/).filter(Boolean);
+      let found = 0;
+      document.querySelectorAll('[data-sample-user]').forEach(row => {
+        const matches = words.every(word => normalize(row.dataset.sampleUser).includes(word));
+        row.hidden = !matches;
+        if (matches) found++;
+      });
+      document.getElementById('sin-resultados').hidden = found > 0;
+    }
+    if (search) {
+      document.getElementById('buscar-demo').addEventListener('click', filter);
+      document.getElementById('limpiar-demo').addEventListener('click', () => { search.value = ''; filter(); search.focus(); });
+      search.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); filter(); } });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Archivos de macOS
+.DS_Store
+
+# Instaladores y archivos comprimidos
+*.pkg
+*.dmg
+*.zip
+
+# Credenciales y configuración local
+.env
+.env.*
+/config/conexion.php
+
+# Dependencias: se recuperan con Composer
+/vendor/
+/composer.phar
+/composer-setup.php
+/composer-setup.sig
+
+# Registros y respaldos de la base de datos
+*.log
+*.sql
+*.sql.gz
+
+# Conservar la migración del correo
+!002_agregar_correo.sql
+/prueba-conexion.php
+/prueba.php

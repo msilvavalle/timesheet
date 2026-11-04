@@ -1,0 +1,98 @@
+MEJR CONSULTING TIMESHEET
+Actualizacion visual para MAMP local
+29 de octubre de 2026
+
+Este paquete agrega la identidad visual al sistema existente. Incluye colores,
+logo original y una fotografia generada para representar el registro de horas.
+La fotografia es decorativa y no corresponde a una oficina real de MEJR.
+El contenido de los formularios y sus traducciones sigue siendo el del sistema.
+
+PALETA DEL MANUAL DE MARCA
+Azul: #419FD9
+Azul petroleo: #1F5B73
+Gris: #F2F2F2
+Amarillo naranja: #F2A922
+Naranja: #F28627
+Se usa el azul petroleo para los botones principales y el naranja como acento.
+La fuente preferida es Roboto; si el equipo no la tiene, se utiliza Arial.
+El archivo de logo conserva exactamente los bytes de MEJR_original.jpg.
+
+1. ABRIR LA VISTA PREVIA
+Descomprime el ZIP y abre vista-previa.html en tu navegador.
+Puedes alternar Ingreso, Administracion, Consultor y Usuarios, y Espanol/English.
+Los datos de esta vista son ejemplos y no se guardan.
+El buscador de Usuarios funciona sobre esos ejemplos. Los enlaces de acciones
+abren el sistema local protegido por el acceso habitual.
+Los campos del ingreso de ejemplo son de solo lectura. El boton Ingresar abre
+el login real de MAMP; esta vista no autentica usuarios ni recibe contrasenas.
+La vista previa utiliza el mismo Bootstrap 5.3.8 que las pantallas existentes.
+
+2. COPIAR LOS TRES ARCHIVOS EN TU PROYECTO
+Proyecto: /Applications/MAMP/htdocs/NAMP/
+
+Copia cada archivo individual a su ubicacion. Conserva los archivos que ya
+existen dentro de assets. No reemplaces la carpeta assets completa en Finder.
+
+assets/css/mejr-marca.css
+assets/img/mejr-logo.jpg
+assets/img/timesheet.png
+
+Si no existe assets/img, crea esa carpeta desde Visual Studio Code.
+vista-previa.html y este LEEME no son necesarios para que funcione el sistema.
+
+3. ACTIVAR LOS ESTILOS EN TODAS LAS PANTALLAS
+En VS Code abre assets/css/styles.css.
+Agrega como PRIMERA linea, antes de cualquier regla CSS:
+
+@import url("mejr-marca.css");
+
+Conserva todo el contenido que ya tenga styles.css. Guarda con Comando + S.
+Las pantallas actuales cargan styles.css, por lo que reciben la paleta, los
+botones y el logo de las cabeceras existentes. El texto original de la marca
+permanece en el documento para los lectores de pantalla.
+
+4. ACTIVAR LA IMAGEN EN LOS DOS PANELES
+Abre panel.php. Busca esta linea de HTML:
+
+<body class="bg-light">
+
+Dejala asi:
+
+<body class="bg-light mejr-panel">
+
+Si la etiqueta body ya tiene otras clases, conserva esas clases y agrega
+mejr-panel dentro de las mismas comillas.
+Guarda. panel.php sirve para administrador y consultor; el cambio cubre ambos.
+
+5. ACTIVAR EL DISENO DEL INGRESO
+Abre login.php y cambia su etiqueta body por:
+
+<body class="bg-light mejr-login">
+
+Conserva cualquier otra clase existente. Guarda.
+En computador se vera el formulario junto a la fotografia. En movil el ingreso
+prioriza el formulario; los paneles mantienen una imagen superior compacta.
+
+6. COMPROBAR
+Abre https://localhost:8890/NAMP/login.php y recarga con Comando + Shift + R.
+Comprueba administrador en Chrome y consultor en Safari.
+Revisa logo, idioma, enlaces, formularios y descarga de Excel.
+En usuarios.php, clientes.php y las demas pantallas, el logo debe aparecer en
+la cabecera comun. El nombre y apellido del usuario mantienen su posicion.
+
+Las pruebas del paquete cubren su presentacion estatica. La comprobacion final
+de PHP, acceso, base de datos y descargas se realiza en tu MAMP.
+
+PARA VOLVER A LOS ESTILOS ANTERIORES
+Quita solamente la linea @import agregada y las clases mejr-panel/mejr-login.
+Los archivos anteriores del sistema se conservan.
+
+NOTA PARA EL HOSTING
+Antes de publicar, la vista previa y sus enlaces a localhost deben quedar fuera
+de los archivos que se suban. El CSS y las dos imagenes usan rutas relativas.
+
+ORIGEN DE LA IMAGEN
+Se utilizo el generador de imagenes integrado para crear un recurso decorativo
+nuevo. No se altero ni se genero nuevamente el logo de MEJR.
+Prompt de la fotografia:
+Use case: photorealistic-natural. Asset type: a restrained editorial photograph for the right-hand image panel of MEJR Consulting's Timesheet web application. Create a landscape 3:2 image of a believable consultant's work desk in a modern office: an open laptop with an understated, slightly out-of-focus time-entry spreadsheet grid, a paper weekly planner, a pen, a small ordinary desk clock, and soft daylight through a window. Calm, natural, practical, realistic materials and modest office furnishings, clean light background. Subtle blue and dark petrol objects inspired by #419FD9 and #1F5B73, and one small warm orange accent inspired by #F28627. Compose the laptop, planner, and clock together near the center so a tighter crop still communicates time tracking. Photograph, not 3D render or illustration. No people, hands, company logos, watermarks, overlaid text, floating dashboards, fake statistics or sci-fi effects. The image is decorative; avoid any readable words or numbers.

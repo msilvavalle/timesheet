@@ -1,0 +1,210 @@
+/* MEJR Consulting - capa visual para el sistema Timesheet existente. */
+/* Colores del manual de marca, pagina 9. */
+
+:root {
+  --mejr-blue: #419fd9;
+  --mejr-petrol: #1f5b73;
+  --mejr-grey: #f2f2f2;
+  --mejr-gold: #f2a922;
+  --mejr-orange: #f28627;
+  --mejr-ink: #243b47;
+  --mejr-muted: #596d78;
+  --mejr-line: #d8e2e7;
+}
+
+body {
+  font-family: Roboto, Arial, sans-serif;
+  color: var(--mejr-ink);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+body.bg-light { background-color: var(--mejr-grey) !important; }
+body a:not(.btn) { color: var(--mejr-petrol); }
+body a:not(.btn):hover { color: #174457; }
+body h1, body h2, body h3 { color: var(--mejr-petrol); font-weight: 600; }
+body .text-secondary { color: var(--mejr-muted) !important; }
+
+/* El texto original de la marca permanece disponible para lectores de pantalla. */
+body > header > .container > p.fw-bold,
+body.mejr-login header > p.fw-bold {
+  display: block;
+  flex: 0 0 auto;
+  width: 146px;
+  height: 104px;
+  margin: 0 !important;
+  overflow: hidden;
+  text-indent: -9999px;
+  white-space: nowrap;
+  background: #fff url('../img/mejr-logo.jpg') center / contain no-repeat;
+}
+body > header {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background: #fff !important;
+  border-bottom: 1px solid var(--mejr-line) !important;
+}
+body > header > .container { padding-top: 5px !important; padding-bottom: 5px !important; }
+body > header .fw-semibold { color: var(--mejr-petrol); }
+body main.container { padding-bottom: 40px !important; }
+body main section.bg-white {
+  border-color: var(--mejr-line) !important;
+  border-radius: 12px !important;
+}
+body .btn {
+  font-weight: 500;
+  border-radius: 7px;
+  padding: .59rem .95rem;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+body .btn-sm { padding: .32rem .65rem; font-size: .82rem; }
+body .btn-dark {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--mejr-petrol);
+  --bs-btn-border-color: var(--mejr-petrol);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #174457;
+  --bs-btn-hover-border-color: #174457;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #174457;
+  --bs-btn-active-border-color: #174457;
+  --bs-btn-disabled-bg: var(--mejr-petrol);
+  --bs-btn-disabled-border-color: var(--mejr-petrol);
+  --bs-btn-focus-shadow-rgb: 65, 159, 217;
+}
+body .btn-outline-dark, body .btn-outline-secondary {
+  --bs-btn-color: var(--mejr-petrol);
+  --bs-btn-border-color: #aabfc9;
+  --bs-btn-hover-color: var(--mejr-petrol);
+  --bs-btn-hover-bg: #eaf4fa;
+  --bs-btn-hover-border-color: var(--mejr-blue);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--mejr-petrol);
+  --bs-btn-active-border-color: var(--mejr-petrol);
+  --bs-btn-focus-shadow-rgb: 65, 159, 217;
+}
+body .btn-group .btn { padding: .35rem .7rem; }
+body .form-label { font-weight: 500; color: var(--mejr-ink); }
+body .form-control, body .form-select {
+  border-color: #b7c9d3;
+  border-radius: 7px;
+  min-height: 44px;
+  color: var(--mejr-ink);
+}
+body .form-control:focus, body .form-select:focus {
+  border-color: var(--mejr-blue);
+  box-shadow: 0 0 0 .2rem rgba(65, 159, 217, .18);
+}
+body :is(a, button, summary):focus-visible {
+  outline: 3px solid var(--mejr-petrol);
+  outline-offset: 3px;
+}
+body .form-text, body caption { color: var(--mejr-muted); }
+body .table { --bs-table-color: var(--mejr-ink); --bs-table-border-color: var(--mejr-line); }
+body .table thead th { color: var(--mejr-petrol); background-color: #f3f7f9; font-weight: 600; padding-top: 13px; padding-bottom: 13px; }
+body .table td { padding-top: 13px; padding-bottom: 13px; }
+body details summary { color: var(--mejr-petrol); }
+
+/* Una sola clase en panel.php cubre administracion y consultores. */
+body.mejr-panel main.container { padding-top: 32px !important; }
+body.mejr-panel main.container > section:first-of-type {
+  position: relative;
+  isolation: isolate;
+  min-height: 420px;
+  padding: 42px calc(43% + 28px) 36px 36px !important;
+  border-top: 3px solid var(--mejr-orange) !important;
+}
+body.mejr-panel main.container > section:first-of-type::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 22px;
+  right: 22px;
+  bottom: 22px;
+  width: 40%;
+  border-radius: 9px;
+  background: #e9eef0 url('../img/timesheet.png') center / cover no-repeat;
+}
+body.mejr-panel h1.h4 { font-size: clamp(1.55rem, 2.1vw, 1.95rem); margin-bottom: 12px; line-height: 1.25; }
+body.mejr-panel main.container > section:first-of-type > p { margin-bottom: 26px; }
+body.mejr-panel main.container > section:first-of-type > a.btn { margin-right: 5px; margin-bottom: 10px !important; }
+body.mejr-panel main.container > section:first-of-type > form { margin-top: 16px; }
+
+/* Ingreso inspirado en la referencia: formulario a la izquierda e imagen a la derecha. */
+body.mejr-login main.container {
+  min-height: 100vh;
+  max-width: 1120px;
+  display: flex;
+  align-items: center;
+  padding: 32px 16px !important;
+}
+body.mejr-login main.container > .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  min-height: 680px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--mejr-line);
+  border-radius: 14px;
+  box-shadow: 0 12px 38px rgba(31, 91, 115, .055);
+}
+body.mejr-login main.container > .row::after {
+  content: '';
+  align-self: stretch;
+  background: #e9eef0 url('../img/timesheet.png') center / cover no-repeat;
+}
+body.mejr-login main.container > .row > [class*='col-'] {
+  width: auto;
+  max-width: none;
+  padding: 28px 40px;
+}
+body.mejr-login nav { margin-bottom: 10px !important; }
+body.mejr-login header { margin-bottom: 24px !important; }
+body.mejr-login header > p.fw-bold { width: 160px; height: 116px; margin-bottom: 10px !important; }
+body.mejr-login header > p.text-secondary { font-size: .9rem; }
+body.mejr-login main section.bg-white { border: 0 !important; border-radius: 0 !important; padding: 0 !important; }
+body.mejr-login h1.h4 { font-size: 1.75rem; line-height: 1.25; }
+body.mejr-login .form-control { min-height: 46px; }
+body.mejr-login footer { font-size: .76rem !important; }
+
+@media (max-width: 991.98px) {
+  body.mejr-login main.container { max-width: 930px; }
+  body.mejr-login main.container > .row > [class*='col-'] { padding: 26px; }
+  body.mejr-panel main.container > section:first-of-type { padding-left: 28px !important; }
+}
+@media (max-width: 767.98px) {
+  body > header > .container > p.fw-bold { width: 108px; height: 78px; }
+  body > header > .container { gap: 12px !important; }
+  body > header .fw-semibold { font-size: .92rem; }
+  body > header .small { font-size: .78rem; }
+  body main.container { padding-top: 22px !important; }
+  body main section.bg-white { padding: 22px !important; }
+  body.mejr-panel main.container > section:first-of-type {
+    min-height: 0;
+    padding: 232px 22px 26px !important;
+  }
+  body.mejr-panel main.container > section:first-of-type::before {
+    inset: 18px 18px auto;
+    width: auto;
+    height: 188px;
+    background-position: center 55%;
+  }
+  body.mejr-panel h1.h4 { font-size: 1.6rem; }
+  body.mejr-panel main.container > section:first-of-type > a.btn { margin-right: 4px; }
+  body.mejr-login main.container { max-width: 540px; padding: 20px 14px !important; }
+  body.mejr-login main.container > .row { grid-template-columns: 1fr; min-height: 0 !important; }
+  body.mejr-login main.container > .row::after { display: none; }
+  body.mejr-login main.container > .row > [class*='col-'] { padding: 24px; }
+  body.mejr-login header > p.fw-bold { width: 140px; height: 101px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .btn { transition: none; }
+}
+@media print {
+  body > header { position: static; }
+  body.mejr-panel main.container > section:first-of-type::before { display: none; }
+  body.mejr-panel main.container > section:first-of-type { min-height: 0; padding: 24px !important; }
+}

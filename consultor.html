@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Mis horas | MEJR Timesheet</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+    crossorigin="anonymous"
+  >
+
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="js/consultor.js" defer></script>
+</head>
+
+<body class="bg-light">
+
+  <!-- Encabezado -->
+  <header class="bg-white border-bottom">
+    <div class="container py-3 d-flex flex-wrap gap-3
+                justify-content-between align-items-center">
+
+      <div>
+        <p class="fw-bold mb-0">MEJR CONSULTING</p>
+        <span class="text-secondary small">Timesheet</span>
+      </div>
+
+      <div class="text-end">
+        <p id="consultor-nombre" class="fw-semibold mb-0">
+          Nombre Apellido
+        </p>
+        <span class="text-secondary small">Panel del consultor</span>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="container py-4">
+
+    <!-- Mes de consulta -->
+    <div class="row align-items-end g-3 mb-4">
+      <div class="col-md-8">
+        <h1 class="h3 mb-1">Mis horas</h1>
+        <p class="text-secondary mb-0">
+          Registra el tiempo dedicado a tus proyectos.
+        </p>
+      </div>
+
+      <div class="col-md-4">
+        <label for="mes" class="form-label">Mes de consulta</label>
+        <input type="month" id="mes" class="form-control">
+      </div>
+    </div>
+
+    <!-- Total mensual -->
+    <div class="bg-white border rounded p-3 mb-4">
+      <span class="text-secondary">Horas del mes seleccionado</span>
+      <p id="total-horas" class="h3 mt-2 mb-0">0 h</p>
+    </div>
+
+    <!-- Registro de horas -->
+    <section class="bg-white border rounded p-4 mb-4">
+      <h2 class="h5 mb-4">Registrar horas</h2>
+
+      <p class="small text-secondary">
+        Prueba local: los registros se borran al actualizar la página.
+      </p>
+
+      <form id="horas-form" method="post">
+        <div class="row g-3">
+
+          <div class="col-md-4">
+            <label for="fecha" class="form-label">Fecha</label>
+            <input
+              type="date"
+              id="fecha"
+              name="fecha"
+              class="form-control"
+              required
+            >
+          </div>
+
+          <div class="col-md-5">
+            <label for="proyecto" class="form-label">Proyecto</label>
+            <select
+              id="proyecto"
+              name="proyecto"
+              class="form-select"
+              required
+            >
+              <option value="">Selecciona un proyecto</option>
+              <option value="prueba">
+                Proyecto de prueba — demostración
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label for="horas" class="form-label">Horas trabajadas</label>
+            <input
+              type="number"
+              id="horas"
+              name="horas"
+              class="form-control"
+              min="0.01"
+              max="24"
+              step="0.01"
+              placeholder="Ej.: 2.5"
+              required
+            >
+          </div>
+
+          <div class="col-12">
+            <label for="descripcion" class="form-label">
+              Descripción del trabajo
+            </label>
+            <textarea
+              id="descripcion"
+              name="descripcion"
+              class="form-control"
+              rows="3"
+              placeholder="Describe brevemente lo que realizaste."
+              required
+            ></textarea>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-dark">
+              Guardar registro
+            </button>
+
+            <p
+              id="mensaje-horas"
+              class="small text-secondary mt-3 mb-0"
+              role="status"
+            ></p>
+          </div>
+
+        </div>
+      </form>
+    </section>
+
+    <!-- Historial mensual -->
+    <section class="bg-white border rounded p-4">
+      <div class="d-flex flex-wrap gap-3
+                  justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Registros del mes</h2>
+
+        <button type="button" class="btn btn-outline-secondary" disabled>
+          Descargar Excel
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Proyecto</th>
+              <th scope="col">Descripción</th>
+              <th scope="col" class="text-end">Horas</th>
+            </tr>
+          </thead>
+
+          <tbody id="tabla-registros">
+            <tr>
+              <td colspan="4" class="text-center text-secondary py-4">
+                No hay horas registradas para este mes.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="text-center text-secondary small mt-4">
+      MEJR Consulting · Timesheet
+    </footer>
+
+  </main>
+</body>
+</html>

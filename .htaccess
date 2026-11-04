@@ -1,0 +1,4 @@
+# Redireccion HTTPS para MAMP local
+<If "%{HTTPS} != 'on'">
+    Redirect 302 "/NAMP" "https://localhost:8890/NAMP"
+</If>
