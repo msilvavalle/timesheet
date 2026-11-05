@@ -58,39 +58,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $cuenta = false;
         $falloConsulta = false;
-        $identificador = strtolower($usuario);
-        $ip = mejrIpCliente();
 
-        if (mejrIngresoBloqueado($pdo, $ip, $identificador)) {
-            $error = 'Demasiados intentos de ingreso. Espera 15 minutos e intenta nuevamente.';
-        } else {
-            try {
-                if (filter_var($usuario, FILTER_VALIDATE_EMAIL) !== false) {
-                    $consulta = $pdo->prepare(
-                        "SELECT id, password_hash
-                         FROM usuarios
-                         WHERE correo = :correo AND rol = 'consultor' AND activo = 1
-                         LIMIT 1"
-                    );
-                    $consulta->execute(['correo' => $identificador]);
-                    $cuenta = $consulta->fetch();
-                } elseif (strlen($usuario) <= 60 && !str_contains($usuario, '@')) {
-                    $consulta = $pdo->prepare(
-                        "SELECT id, password_hash
-                         FROM usuarios
-                         WHERE usuario = :usuario AND rol = 'administrador' AND activo = 1
-                         LIMIT 1"
-                    );
-                    $consulta->execute(['usuario' => $usuario]);
-                    $cuenta = $consulta->fetch();
-                }
-            } catch (PDOException $e) {
-                $falloConsulta = true;
-                error_log('MEJR: no se pudo comprobar el acceso.');
-                $error = 'No se pudo comprobar el acceso. Inténtalo nuevamente.';
+        try {
+            if (filter_var($usuario, FILTER_VALIDATE_EMAIL) !== false) {
+                $consulta = $pdo->prepare(
+                    "SELECT id, password_hash
+                     FROM usuarios
+                     WHERE correo = :correo AND rol = 'consultor' AND activo = 1
+                     LIMIT 1"
+                );
+                $consulta->execute(['correo' => strtolower($usuario)]);
+                $cuenta = $consulta->fetch();
+            } elseif (strlen($usuario) <= 60 && !str_contains($usuario, '@')) {
+                $consulta = $pdo->prepare(
+                    "SELECT id, password_hash
+                     FROM usuarios
+                     WHERE usuario = :usuario AND rol = 'administrador' AND activo = 1
+                     LIMIT 1"
+                );
+                $consulta->execute(['usuario' => $usuario]);
+                $cuenta = $consulta->fetch();
             }
+        } catch (PDOException $e) {
+            $falloConsulta = true;
+            error_log('MEJR: no se pudo comprobar el acceso.');
+            $error = 'No se pudo comprobar el acceso. Inténtalo nuevamente.';
+        }
 
-            if (!$falloConsulta) {
+        if (!$falloConsulta) {
+            // El límite cuenta por cuenta encontrada, no por el texto escrito.
+            $claveLimite = $cuenta
+                ? 'cuenta:' . (int) $cuenta['id']
+                : 'texto:' . strtolower($usuario);
+            $ip = mejrIpCliente();
+            $intento = mejrRegistrarIntento($pdo, $ip, $claveLimite);
+
+            if (mejrIngresoBloqueado($pdo, $intento, $ip, $claveLimite)) {
+                mejrDescartarIntento($pdo, $intento);
+                $error = 'Demasiados intentos de ingreso. Espera 15 minutos e intenta nuevamente.';
+            } else {
                 if ($cuenta) {
                     $claveCorrecta = password_verify($clave, $cuenta['password_hash']);
                 } else {
@@ -101,14 +107,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if ($claveCorrecta) {
-                    mejrLimpiarIngresosFallidos($pdo, $identificador);
+                    mejrLimpiarIntentos($pdo, $claveLimite);
+                    $hashVigente = $cuenta['password_hash'];
+
+                    // Lleva el hash al costo actual de PHP. Así todas las cuentas
+                    // tardan lo mismo que el cálculo de una cuenta inexistente.
+                    if (password_needs_rehash($hashVigente, PASSWORD_DEFAULT)) {
+                        $hashNuevo = password_hash($clave, PASSWORD_DEFAULT);
+
+                        try {
+                            $rehash = $pdo->prepare(
+                                'UPDATE usuarios SET password_hash = :nuevo
+                                 WHERE id = :id AND password_hash = :anterior'
+                            );
+                            $rehash->execute([
+                                'nuevo' => $hashNuevo,
+                                'id' => $cuenta['id'],
+                                'anterior' => $hashVigente
+                            ]);
+
+                            if ($rehash->rowCount() === 1) {
+                                $hashVigente = $hashNuevo;
+                            }
+                        } catch (PDOException $e) {
+                            error_log('MEJR: no se pudo actualizar el costo de una contraseña.');
+                        }
+                    }
+
                     session_regenerate_id(true);
 
                     $_SESSION = [
                         'usuario_id' => (int) $cuenta['id'],
                         'ultima_actividad' => time(),
                         'csrf' => bin2hex(random_bytes(32)),
-                        'credencial_version' => hash('sha256', $cuenta['password_hash']),
+                        'credencial_version' => hash('sha256', $hashVigente),
                         'idioma' => $idioma
                     ];
 
@@ -116,7 +148,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
 
-                mejrRegistrarIngresoFallido($pdo, $ip, $identificador);
                 $error = 'Correo, usuario de administración o contraseña incorrectos.';
             }
         }

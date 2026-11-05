@@ -1,0 +1,2 @@
+# Archivos internos: se cargan con require desde PHP, nunca por HTTP.
+Require all denied

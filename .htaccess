@@ -1,34 +1,41 @@
-# MEJR Timesheet: configuración de Apache para MAMP local y para el hosting.
+# MEJR Timesheet: configuración de Apache 2.4 para MAMP local y para el hosting.
 # Requiere mod_rewrite (activo por defecto en MAMP y en hosting compartido).
 
 # La raíz abre el login real, no el prototipo index.html.
 DirectoryIndex login.php
 
 # Detrás de un proxy o CDN que termina TLS, PHP debe ver la conexión como
-# HTTPS para emitir la cookie de sesión con Secure.
-SetEnvIf X-Forwarded-Proto "^https$" HTTPS=on
+# HTTPS para emitir la cookie de sesión con Secure. Sin proxy es inofensivo:
+# quien envíe la cabecera solo cambia su propio pedido.
+SetEnvIf X-Forwarded-Proto "^https" HTTPS=on
 
 RewriteEngine On
 
-# MAMP local: HTTP -> HTTPS en el puerto 8890, como antes.
+# MAMP (HTTP en el puerto 8888): HTTP -> HTTPS en el puerto 8890, mismo host.
 RewriteCond %{HTTPS} !=on
-RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
-RewriteRule ^ https://localhost:8890%{REQUEST_URI} [R=302,L]
+RewriteCond %{HTTP_HOST} ^([^:]+):8888$
+RewriteRule ^ https://%1:8890%{REQUEST_URI} [R=302,L]
 
-# Hosting: HTTP -> HTTPS. Contempla un proxy o CDN que termina TLS.
+# Hosting: HTTP -> HTTPS en el puerto estándar. Queda en 302 hasta validarlo
+# en producción; después puede pasar a 301.
 RewriteCond %{HTTPS} !=on
-RewriteCond %{HTTP:X-Forwarded-Proto} !=https
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP:X-Forwarded-Proto} !^https [NC]
+RewriteCond %{HTTP_HOST} ^([^:]+)
+RewriteRule ^ https://%1%{REQUEST_URI} [R=302,L]
 
 # Carpetas que no se sirven: configuración, dependencias, migraciones y git.
-RewriteRule ^(config|vendor|sql|\.git)(/|$) - [F,L]
+# config/ y sql/ además tienen su propio .htaccess.
+RewriteRule (^|/)(config|vendor|sql|\.git)(/|$) - [F,L,NC]
 
-# Archivos que no se sirven: dependencias, documentación, registros y
-# prototipos de diseño (vista-previa.html se abre como archivo, no por Apache).
-<FilesMatch "\.(sql|md|lock|json|txt|log)$">
+# Solo se sirven páginas PHP, estilos, scripts e imágenes. Cualquier otro
+# archivo (respaldos .sql.gz, .zip, .md, .json, .lock, .txt, .log, los .html
+# de prototipo) y todo lo que empiece con punto (.env, .git, .DS_Store) da 403.
+<FilesMatch "(?i)(^\.|\.(?!(php|css|js|webp|png|jpe?g|gif|svg|ico)$)[^.]*$)">
     Require all denied
 </FilesMatch>
-<FilesMatch "^((index|consultor|vista-previa)\.html|(app|consultor)\.js|\.git.*)$">
+
+# Scripts de prototipo y pruebas locales de conexión.
+<FilesMatch "(?i)^((app|consultor)\.js|prueba(-conexion)?\.php)$">
     Require all denied
 </FilesMatch>
 

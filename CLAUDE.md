@@ -52,7 +52,8 @@ Pages by role:
 Shared helpers in `config/`:
 
 - `exportar-horas.php`: `descargarHorasExcel($registros, $totalCentesimas, $periodo)` streams the xlsx and `exit`s.
-- `limite-ingreso.php`: login throttling (5 failures per identifier or 30 per IP in 15 min, table `intentos_login`). It fails open: if the table is missing, login keeps working and the error goes to the PHP log.
+- `limite-ingreso.php`: login throttling over table `intentos_login`, 15-minute window: 5 attempts per account from one IP, 50 per account from any IP, 30 per IP. Each attempt is inserted **before** the password check and counted including itself (so parallel requests cannot slip past); rejected attempts are deleted, and a successful login clears the account's rows. The counter key is `cuenta:<id>` when the account exists (so spelling variants share it) or `texto:<lowercased input>`; only its SHA-256 is stored. It fails open: if the table is missing, login keeps working and the error goes to the PHP log. `.htaccess` relies on `REMOTE_ADDR`, so behind a proxy the host needs `mod_remoteip`.
+- On a successful login, `login.php` re-hashes the password when `password_needs_rehash()` says so, keeping bcrypt cost aligned with the dummy `password_hash()` used for unknown accounts.
 
 ## Conventions to keep
 
@@ -70,5 +71,5 @@ Shared helpers in `config/`:
 
 ## Gotchas
 
-- `.htaccess` serves both environments: on `localhost`/`127.0.0.1` it redirects HTTP to `https://localhost:8890`, elsewhere to HTTPS on the same host, and it only sends HSTS outside localhost. It also blocks `config/`, `vendor/`, `sql/`, `.git`, `*.md|json|lock|sql|txt|log` and the prototypes.
+- `.htaccess` serves both environments: a request to port 8888 (MAMP) goes to HTTPS on port 8890 of the same host; anything else goes to HTTPS on the standard port (302 until verified in production). HSTS is only sent outside localhost. It blocks `config/`, `vendor/`, `sql/` and `.git` (case-insensitive; `config/` and `sql/` also have their own `Require all denied` `.htaccess`) and serves **only** `php|css|js|webp|png|jpg|jpeg|gif|svg|ico` files: any other extension or dotfile gets 403. Adding a new static type (fonts, PDFs) means adding its extension there.
 - Changing your own password keeps the current session (its `credencial_version` is refreshed) and closes every other session of that account.
