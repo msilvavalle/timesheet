@@ -2,6 +2,7 @@
 session_name('mejr_timesheet');
 session_start([
     'use_strict_mode' => true,
+    'gc_maxlifetime' => 1800,
     'use_only_cookies' => true,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
@@ -46,13 +47,8 @@ if (
 require __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/config/validar-sesion.php';
 
-$consulta = $pdo->prepare(
-    'SELECT nombres, apellidos, rol, password_hash
-     FROM usuarios
-     WHERE id = :id AND activo = 1'
-);
-$consulta->execute(['id' => $_SESSION['usuario_id']]);
-$cuenta = $consulta->fetch();
+// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
+$cuenta = $cuentaSesion;
 
 if (
     !$cuenta ||
@@ -130,6 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'La contraseña nueva debe ser diferente de la actual.';
     } else {
         try {
+            $nuevoHash = password_hash($nueva, PASSWORD_DEFAULT);
+
             $actualizar = $pdo->prepare(
                 'UPDATE usuarios
                  SET password_hash = :nueva
@@ -139,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             $actualizar->execute([
-                'nueva' => password_hash($nueva, PASSWORD_DEFAULT),
+                'nueva' => $nuevoHash,
                 'id' => $_SESSION['usuario_id'],
                 'anterior' => $cuenta['password_hash']
             ]);
@@ -150,6 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
 
                 $_SESSION['csrf'] = bin2hex(random_bytes(32));
+                // Esta sesión sigue activa; las demás de la cuenta se cierran
+                // porque conservan la versión anterior de la credencial.
+                $_SESSION['credencial_version'] = hash('sha256', $nuevoHash);
                 unset($_SESSION['intentos_clave']);
 
                 $_SESSION['clave_cambiada'] = true;
@@ -180,7 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
 </head>
 
 <body class="bg-light">

@@ -2,6 +2,7 @@
 session_name('mejr_timesheet');
 session_start([
     'use_strict_mode' => true,
+    'gc_maxlifetime' => 1800,
     'use_only_cookies' => true,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
@@ -21,12 +22,8 @@ if (!isset($_SESSION['usuario_id']) || time() - ($_SESSION['ultima_actividad'] ?
 require __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/config/validar-sesion.php';
 
-$consulta = $pdo->prepare(
-    'SELECT id, nombres, apellidos, rol
-     FROM usuarios WHERE id = :id AND activo = 1'
-);
-$consulta->execute(['id' => $_SESSION['usuario_id']]);
-$cuenta = $consulta->fetch();
+// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
+$cuenta = $cuentaSesion;
 
 if (!$cuenta || !in_array($cuenta['rol'], ['administrador', 'consultor'], true)) {
     $_SESSION = [];
@@ -67,7 +64,7 @@ $titulo = $cuenta['rol'] === 'administrador'
     : 'Panel del consultor';
 ?>
 <!DOCTYPE html>
-<html lang="<?= $idioma ?>">
+<html lang="<?= escapar($idioma) ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -80,7 +77,8 @@ $titulo = $cuenta['rol'] === 'administrador'
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
 </head>
 
 <body class="bg-light mejr-panel">
@@ -194,6 +192,5 @@ $titulo = $cuenta['rol'] === 'administrador'
     </section>
   </main>
 
-<body>
-
+</body>
 </html>

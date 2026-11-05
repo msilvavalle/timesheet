@@ -2,6 +2,7 @@
 session_name('mejr_timesheet');
 session_start([
     'use_strict_mode' => true,
+    'gc_maxlifetime' => 1800,
     'use_only_cookies' => true,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
@@ -75,11 +76,8 @@ if (!isset($_SESSION['usuario_id']) || time() - ($_SESSION['ultima_actividad'] ?
 require __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/config/validar-sesion.php';
 
-$consulta = $pdo->prepare(
-    'SELECT nombres, apellidos, rol, password_hash FROM usuarios WHERE id = :id AND activo = 1'
-);
-$consulta->execute(['id' => $_SESSION['usuario_id']]);
-$cuenta = $consulta->fetch();
+// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
+$cuenta = $cuentaSesion;
 
 if (!$cuenta) {
     $_SESSION = [];
@@ -338,6 +336,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'datos') {
 
             $pdo->commit();
 
+            error_log(
+                'MEJR: administrador ' . (int) $_SESSION['usuario_id'] .
+                ' actualizó los datos del consultor ' . $consultorId . '.'
+            );
+
             $_SESSION['usuarios_aviso'] = [
                 'tipo' => 'success',
                 'texto' => 'Datos del consultor guardados correctamente.'
@@ -380,7 +383,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'datos') {
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
 </head>
 
 <body class="bg-light">
@@ -668,18 +672,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $accion === 'datos') {
     </section>
   </main>
 
-  <script>
-    document.querySelectorAll('[data-ver-clave]').forEach((boton) => {
-      const campo = document.getElementById(boton.dataset.verClave);
-      if (!campo) return;
-
-      boton.addEventListener('click', () => {
-        const mostrar = campo.type === 'password';
-        campo.type = mostrar ? 'text' : 'password';
-        boton.textContent = mostrar ? boton.dataset.ocultar : boton.dataset.mostrar;
-        boton.setAttribute('aria-pressed', String(mostrar));
-      });
-    });
-  </script>
+  <script src="js/ver-clave.js?v=1" defer></script>
 </body>
 </html>

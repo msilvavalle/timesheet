@@ -2,6 +2,7 @@
 session_name('mejr_timesheet');
 session_start([
     'use_strict_mode' => true,
+    'gc_maxlifetime' => 1800,
     'use_only_cookies' => true,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
@@ -17,11 +18,13 @@ $traducciones += [
     'Consultores: usa tu correo electrónico. Administración: usa tu usuario habitual.' => 'Consultants: use your email address. Administrators: use your usual username.',
     'Correo, usuario de administración o contraseña incorrectos.' => 'Incorrect email address, administrator username or password.',
     'No se pudo comprobar el acceso. Inténtalo nuevamente.' => 'Access could not be checked. Please try again.',
-    'Actualiza la página e intenta nuevamente.' => 'Refresh the page and try again.'
+    'Actualiza la página e intenta nuevamente.' => 'Refresh the page and try again.',
+    'Demasiados intentos de ingreso. Espera 15 minutos e intenta nuevamente.' => 'Too many sign-in attempts. Wait 15 minutes and try again.'
 ];
 
 require __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/config/validar-sesion.php';
+require_once __DIR__ . '/config/limite-ingreso.php';
 
 if (isset($_SESSION['usuario_id'])) {
   header('Location: panel.php');
@@ -55,50 +58,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $cuenta = false;
         $falloConsulta = false;
+        $identificador = strtolower($usuario);
+        $ip = mejrIpCliente();
 
-        try {
-            if (filter_var($usuario, FILTER_VALIDATE_EMAIL) !== false) {
-                $consulta = $pdo->prepare(
-                    "SELECT id, password_hash
-                     FROM usuarios
-                     WHERE correo = :correo AND rol = 'consultor' AND activo = 1
-                     LIMIT 1"
-                );
-                $consulta->execute(['correo' => strtolower($usuario)]);
-                $cuenta = $consulta->fetch();
-            } elseif (strlen($usuario) <= 60 && !str_contains($usuario, '@')) {
-                $consulta = $pdo->prepare(
-                    "SELECT id, password_hash
-                     FROM usuarios
-                     WHERE usuario = :usuario AND rol = 'administrador' AND activo = 1
-                     LIMIT 1"
-                );
-                $consulta->execute(['usuario' => $usuario]);
-                $cuenta = $consulta->fetch();
+        if (mejrIngresoBloqueado($pdo, $ip, $identificador)) {
+            $error = 'Demasiados intentos de ingreso. Espera 15 minutos e intenta nuevamente.';
+        } else {
+            try {
+                if (filter_var($usuario, FILTER_VALIDATE_EMAIL) !== false) {
+                    $consulta = $pdo->prepare(
+                        "SELECT id, password_hash
+                         FROM usuarios
+                         WHERE correo = :correo AND rol = 'consultor' AND activo = 1
+                         LIMIT 1"
+                    );
+                    $consulta->execute(['correo' => $identificador]);
+                    $cuenta = $consulta->fetch();
+                } elseif (strlen($usuario) <= 60 && !str_contains($usuario, '@')) {
+                    $consulta = $pdo->prepare(
+                        "SELECT id, password_hash
+                         FROM usuarios
+                         WHERE usuario = :usuario AND rol = 'administrador' AND activo = 1
+                         LIMIT 1"
+                    );
+                    $consulta->execute(['usuario' => $usuario]);
+                    $cuenta = $consulta->fetch();
+                }
+            } catch (PDOException $e) {
+                $falloConsulta = true;
+                error_log('MEJR: no se pudo comprobar el acceso.');
+                $error = 'No se pudo comprobar el acceso. Inténtalo nuevamente.';
             }
-        } catch (PDOException $e) {
-            $falloConsulta = true;
-            error_log('MEJR: no se pudo comprobar el acceso.');
-            $error = 'No se pudo comprobar el acceso. Inténtalo nuevamente.';
-        }
 
-        if ($cuenta && password_verify($clave, $cuenta['password_hash'])) {
-            session_regenerate_id(true);
+            if (!$falloConsulta) {
+                if ($cuenta) {
+                    $claveCorrecta = password_verify($clave, $cuenta['password_hash']);
+                } else {
+                    // Mismo costo que verificar una cuenta real: así el tiempo
+                    // de respuesta no revela si el correo o el usuario existe.
+                    password_hash($clave, PASSWORD_DEFAULT);
+                    $claveCorrecta = false;
+                }
 
-            $_SESSION = [
-                'usuario_id' => (int) $cuenta['id'],
-                'ultima_actividad' => time(),
-                'csrf' => bin2hex(random_bytes(32)),
-                'credencial_version' => hash('sha256', $cuenta['password_hash']),
-                'idioma' => $idioma
-            ];
+                if ($claveCorrecta) {
+                    mejrLimpiarIngresosFallidos($pdo, $identificador);
+                    session_regenerate_id(true);
 
-            header('Location: panel.php', true, 303);
-            exit;
-        }
+                    $_SESSION = [
+                        'usuario_id' => (int) $cuenta['id'],
+                        'ultima_actividad' => time(),
+                        'csrf' => bin2hex(random_bytes(32)),
+                        'credencial_version' => hash('sha256', $cuenta['password_hash']),
+                        'idioma' => $idioma
+                    ];
 
-        if (!$falloConsulta) {
-            $error = 'Correo, usuario de administración o contraseña incorrectos.';
+                    header('Location: panel.php', true, 303);
+                    exit;
+                }
+
+                mejrRegistrarIngresoFallido($pdo, $ip, $identificador);
+                $error = 'Correo, usuario de administración o contraseña incorrectos.';
+            }
         }
     }
 }
@@ -117,7 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
 
 </head>
 <body class="bg-light mejr-login">

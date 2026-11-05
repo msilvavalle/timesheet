@@ -2,6 +2,7 @@
 session_name('mejr_timesheet');
 session_start([
     'use_strict_mode' => true,
+    'gc_maxlifetime' => 1800,
     'use_only_cookies' => true,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
@@ -55,11 +56,8 @@ if (!isset($_SESSION['usuario_id']) || time() - ($_SESSION['ultima_actividad'] ?
 require __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/config/validar-sesion.php';
 
-$consulta = $pdo->prepare(
-    'SELECT nombres, apellidos, rol FROM usuarios WHERE id = :id AND activo = 1'
-);
-$consulta->execute(['id' => $_SESSION['usuario_id']]);
-$cuenta = $consulta->fetch();
+// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
+$cuenta = $cuentaSesion;
 
 if (!$cuenta) {
     $_SESSION = [];
@@ -125,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     foreach (['nombres', 'apellidos'] as $campo) {
-        if (!preg_match("/\A[\p{L}\p{M} .'\x{2019}-]{1,100}\z/u", $datos[$campo])) {
+        if (!preg_match("/\A[\p{L}\p{M} .'\x{2019}-]{1,100}\z/u", $datos[$campo])
+            || !preg_match('/\p{L}/u', $datos[$campo])) {
             $errores[] = 'Nombres y apellidos deben contener letras y un máximo de 100 caracteres por campo.';
             break;
         }
@@ -169,6 +168,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password_hash' => password_hash($password, PASSWORD_DEFAULT)
             ]);
 
+            error_log(
+                'MEJR: administrador ' . (int) $_SESSION['usuario_id'] .
+                ' creó el consultor ' . (int) $pdo->lastInsertId() . '.'
+            );
+
             $_SESSION['consultor_creado'] = $datos['correo'];
 
             header('Location: usuarios-crear.php', true, 303);
@@ -198,7 +202,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
 </head>
 
 <body class="bg-light">

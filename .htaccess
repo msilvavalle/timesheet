@@ -1,4 +1,54 @@
-# Redireccion HTTPS para MAMP local
-<If "%{HTTPS} != 'on'">
-    Redirect 302 "/NAMP" "https://localhost:8890/NAMP"
-</If>
+# MEJR Timesheet: configuración de Apache para MAMP local y para el hosting.
+# Requiere mod_rewrite (activo por defecto en MAMP y en hosting compartido).
+
+# La raíz abre el login real, no el prototipo index.html.
+DirectoryIndex login.php
+
+# Detrás de un proxy o CDN que termina TLS, PHP debe ver la conexión como
+# HTTPS para emitir la cookie de sesión con Secure.
+SetEnvIf X-Forwarded-Proto "^https$" HTTPS=on
+
+RewriteEngine On
+
+# MAMP local: HTTP -> HTTPS en el puerto 8890, como antes.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+RewriteRule ^ https://localhost:8890%{REQUEST_URI} [R=302,L]
+
+# Hosting: HTTP -> HTTPS. Contempla un proxy o CDN que termina TLS.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Carpetas que no se sirven: configuración, dependencias, migraciones y git.
+RewriteRule ^(config|vendor|sql|\.git)(/|$) - [F,L]
+
+# Archivos que no se sirven: dependencias, documentación, registros y
+# prototipos de diseño (vista-previa.html se abre como archivo, no por Apache).
+<FilesMatch "\.(sql|md|lock|json|txt|log)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^((index|consultor|vista-previa)\.html|(app|consultor)\.js|\.git.*)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "same-origin"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+    # HSTS fuera de localhost: en el navegador del desarrollador afectaría
+    # a todos los puertos de localhost durante un año.
+    Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTP_HOST} !~ /^(localhost|127\.0\.0\.1)(:[0-9]+)?$/"
+</IfModule>
+
+# Caché de estáticos. Al cambiar un CSS o JS, sube su ?v= en los <link>/<script>.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType text/javascript "access plus 7 days"
+</IfModule>

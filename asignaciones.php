@@ -2,6 +2,7 @@
 session_name('mejr_timesheet');
 session_start([
     'use_strict_mode' => true,
+    'gc_maxlifetime' => 1800,
     'use_only_cookies' => true,
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
@@ -56,12 +57,8 @@ if (!isset($_SESSION['usuario_id']) || time() - ($_SESSION['ultima_actividad'] ?
 require __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/config/validar-sesion.php';
 
-$consulta = $pdo->prepare(
-    'SELECT nombres, apellidos, rol
-     FROM usuarios WHERE id = :id AND activo = 1'
-);
-$consulta->execute(['id' => $_SESSION['usuario_id']]);
-$cuenta = $consulta->fetch();
+// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
+$cuenta = $cuentaSesion;
 
 if (!$cuenta) {
     $_SESSION = [];
@@ -145,6 +142,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             if ($insertar->rowCount() === 1) {
+                error_log(
+                    'MEJR: administrador ' . (int) $_SESSION['usuario_id'] .
+                    ' asignó el proyecto ' . $proyectoValido .
+                    ' al consultor ' . $consultorValido . '.'
+                );
+
                 $_SESSION['asignacion_guardada'] = true;
 
                 header('Location: asignaciones.php', true, 303);
@@ -202,7 +205,8 @@ $asignaciones = $pdo->query(
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
 </head>
 
 <body class="bg-light">
@@ -446,92 +450,6 @@ $asignaciones = $pdo->query(
     </section>
   </main>
 
-  <script>
-    (() => {
-      'use strict';
-
-      const buscador = document.getElementById('buscador-consultores');
-      const entrada = document.getElementById('buscar-consultor');
-      const limpiar = document.getElementById('limpiar-consultor');
-      const selector = document.getElementById('consultor_id');
-      const resultados = document.getElementById('resultados-consultores');
-      const guardar = document.getElementById('guardar-asignacion');
-
-      if (!buscador || !entrada || !limpiar || !selector || !resultados || !guardar) {
-        return;
-      }
-
-      function normalizar(texto) {
-        return texto
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLocaleLowerCase('es')
-          .trim();
-      }
-
-      const opciones = Array.from(selector.options)
-        .filter(opcion => opcion.value !== '')
-        .map(opcion => ({
-          valor: opcion.value,
-          texto: opcion.textContent.trim(),
-          busqueda: normalizar(opcion.textContent)
-        }));
-
-      if (opciones.length === 0) {
-        return;
-      }
-
-      const textoInicial = selector.options[0].textContent.trim();
-      const guardadoBloqueado = guardar.disabled;
-
-      function filtrarConsultores() {
-        const palabras = normalizar(entrada.value).split(/\s+/).filter(Boolean);
-        const seleccionAnterior = selector.value;
-
-        const visibles = opciones.filter(opcion =>
-          palabras.every(palabra => opcion.busqueda.includes(palabra))
-        );
-
-        const fragmento = document.createDocumentFragment();
-        fragmento.appendChild(new Option(textoInicial, ''));
-
-        visibles.forEach(opcion => {
-          fragmento.appendChild(new Option(opcion.texto, opcion.valor));
-        });
-
-        selector.replaceChildren(fragmento);
-
-        selector.value = visibles.some(opcion => opcion.valor === seleccionAnterior)
-          ? seleccionAnterior
-          : '';
-
-        guardar.disabled = guardadoBloqueado || visibles.length === 0;
-
-        resultados.textContent = visibles.length > 0
-          ? `${resultados.dataset.disponibles}: ${visibles.length}`
-          : resultados.dataset.sinResultados;
-      }
-
-      entrada.addEventListener('input', filtrarConsultores);
-      entrada.addEventListener('search', filtrarConsultores);
-
-      entrada.addEventListener('keydown', evento => {
-        if (evento.key === 'Enter') {
-          evento.preventDefault();
-          selector.focus();
-        }
-      });
-
-      limpiar.addEventListener('click', () => {
-        entrada.value = '';
-        filtrarConsultores();
-        entrada.focus();
-      });
-
-      filtrarConsultores();
-      buscador.hidden = false;
-      resultados.hidden = false;
-    })();
-  </script>
+  <script src="js/asignaciones.js?v=1" defer></script>
 </body>
 </html>
