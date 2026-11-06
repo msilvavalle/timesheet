@@ -77,7 +77,52 @@ $traducciones = [
     'Mostrar' => 'Show',
     'Ocultar' => 'Hide',
     'Has iniciado sesión correctamente.' => 'You have signed in successfully.',
-    'Solicitud no válida.' => 'Invalid request.'
+    'Solicitud no válida.' => 'Invalid request.',
+
+    // Barra, menú de la cuenta y accesos (config/arranque.php y plantilla-inicio.php).
+    'Secciones' => 'Sections',
+    'Idioma' => 'Language',
+    'Dashboard' => 'Dashboard',
+    'Horas' => 'Hours',
+    'Consultores' => 'Consultants',
+    'Clientes y proyectos' => 'Clients and projects',
+    'Menú de la cuenta' => 'Account menu',
+    'Administración' => 'Administration',
+    'Consultor' => 'Consultant',
+    'Acceso reservado para administración.' => 'Access restricted to administrators.',
+    'Esta sección corresponde al panel del consultor.' => 'This section is for consultants.',
+    'Solicitud no válida. Vuelve a abrir la página.' => 'Invalid request. Open the page again.',
+
+    // Palabras comunes de tablas y formularios.
+    'Acciones' => 'Actions',
+    'Estado' => 'Status',
+    'Activo' => 'Active',
+    'Inactivo' => 'Inactive',
+    'Activa' => 'Active',
+    'Inactiva' => 'Inactive',
+    'Activar' => 'Activate',
+    'Desactivar' => 'Deactivate',
+    'Editar' => 'Edit',
+    'Borrar' => 'Delete',
+    'Guardar cambios' => 'Save changes',
+    'Cancelar' => 'Cancel',
+    'Buscar' => 'Search',
+    'Limpiar' => 'Clear',
+    'Fecha' => 'Date',
+    'Mes' => 'Month',
+    'Cliente' => 'Client',
+    'Proyecto' => 'Project',
+    'Proyectos' => 'Projects',
+    'Descripción' => 'Description',
+    'Total' => 'Total',
+    'Horas del mes' => 'Hours this month',
+    'Descargar Excel' => 'Download Excel',
+    'Mes anterior' => 'Previous month',
+    'Mes siguiente' => 'Next month',
+    'Sin tarifa' => 'No rate',
+    'Tarifa' => 'Rate',
+    'Volver' => 'Back',
+    'No se pudo guardar el cambio. Inténtalo nuevamente.' => 'The change could not be saved. Try again.'
 ];
 
 function mejrTraducir(string $texto): string {
