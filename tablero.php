@@ -224,11 +224,14 @@ $parametrosVista = ['desde' => $periodo['desdeMes'], 'hasta' => $periodo['hastaM
 
 if (($_GET['exportar'] ?? '') === 'excel') {
     require __DIR__ . '/config/exportar-tablero.php';
-    descargarTableroExcel($periodo['etiqueta'], $porCliente, $porProyecto, $porConsultor, $clientes, $proyectos, $consultores);
+    descargarTableroExcel(
+        $periodo['etiqueta'] . ($clienteFiltro !== null ? ' · ' . mejrTraducir('Cliente') . ': ' . ($clientes[$clienteFiltro] ?? '#' . $clienteFiltro) : ''),
+        $porCliente, $porProyecto, $porConsultor, $clientes, $proyectos, $consultores, $incompleto
+    );
 }
 
 $urlHoras = static fn(array $extra): string =>
-    'horas-admin.php?' . http_build_query(['desde' => $periodo['desdeMes'], 'hasta' => $periodo['hastaMes']] + $extra);
+    'horas-admin.php?' . http_build_query($extra + $parametrosVista);
 
 $atajos = [
     'Este mes' => [$mesActual, $mesActual],
@@ -526,7 +529,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
           <tbody>
             <?php foreach ($meses as $clave => $fila): ?>
               <tr>
-                <td><a href="tablero.php?<?= escapar(http_build_query(['desde' => $clave, 'hasta' => $clave])) ?>"><?= escapar($fila['etiqueta']) ?></a></td>
+                <td><a href="tablero.php?<?= escapar(http_build_query(['desde' => $clave, 'hasta' => $clave] + $parametrosVista)) ?>"><?= escapar($fila['etiqueta']) ?></a></td>
                 <td>
                   <meter class="mejr-barra-dato" min="0" max="<?= escapar($maximoHoras) ?>" value="<?= escapar($fila['horas']) ?>"></meter>
                   <span class="small"><?= escapar(mejrHoras($fila['horas'])) ?></span>

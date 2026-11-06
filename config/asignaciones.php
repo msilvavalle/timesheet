@@ -44,10 +44,11 @@ function mejrAsignacionesActivas(PDO $pdo, string $lado, int $id): array
 }
 
 /**
- * Deja activas exactamente las asignaciones marcadas entre las disponibles.
+ * Deja activas exactamente las asignaciones marcadas entre las disponibles
+ * (y, si se indica, entre las que se mostraron en el formulario).
  * Devuelve [cantidad activada, cantidad desactivada].
  */
-function mejrGuardarAsignaciones(PDO $pdo, string $lado, int $id, array $marcados): array
+function mejrGuardarAsignaciones(PDO $pdo, string $lado, int $id, array $marcados, ?array $mostrados = null): array
 {
     [$fijo, $otro] = $lado === 'consultor'
         ? ['consultor_id', 'proyecto_id']
@@ -70,6 +71,12 @@ function mejrGuardarAsignaciones(PDO $pdo, string $lado, int $id, array $marcado
         }
 
         $disponibles = array_map('intval', array_column(mejrOpcionesAsignables($pdo, $lado), 'id'));
+
+        // Solo las opciones que la persona tenía en pantalla: si otro admin reactivó
+        // un proyecto o consultor mientras tanto, su asignación no se toca.
+        if ($mostrados !== null) {
+            $disponibles = array_values(array_intersect($disponibles, array_map('intval', $mostrados)));
+        }
 
         $actuales = $pdo->prepare(
             "SELECT $otro AS otro, activo FROM proyecto_consultor WHERE $fijo = :id FOR UPDATE"

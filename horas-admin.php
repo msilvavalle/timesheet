@@ -27,7 +27,8 @@ $traducciones += [
     'Incompleto: hay horas sin tarifa.' => 'Incomplete: some hours have no rate.',
     'Tarifa cliente' => 'Client rate',
     'Tarifa consultor' => 'Consultant rate',
-    'No hay registros para el período y los filtros seleccionados.' => 'No entries match the selected period and filters.'
+    'No hay registros para el período y los filtros seleccionados.' => 'No entries match the selected period and filters.',
+    'Demasiados registros para un Excel (máximo 10.000). Acota el período o los filtros.' => 'Too many entries for one Excel file (maximum 10,000). Narrow the period or the filters.'
 ];
 
 $periodo = mejrPeriodoMeses($_GET);
@@ -100,11 +101,6 @@ foreach ($registros as $indice => $registro) {
 
 $incompleto = $totales['sinCobro'] > 0 || $totales['sinPago'] > 0;
 
-if (($_GET['exportar'] ?? '') === 'excel') {
-    require __DIR__ . '/config/exportar-horas.php';
-    descargarHorasExcel($registros, $totales['horas'], $periodo['etiqueta'], true);
-}
-
 $consultores = $pdo->query(
     "SELECT u.id, u.nombres, u.apellidos
      FROM usuarios u
@@ -117,6 +113,42 @@ $proyectos = $pdo->query(
      FROM proyectos p INNER JOIN clientes c ON c.id = p.cliente_id
      ORDER BY c.nombre, p.nombre, p.id'
 )->fetchAll();
+
+if (($_GET['exportar'] ?? '') === 'excel') {
+    if (count($registros) > 10000) {
+        http_response_code(400);
+        exit(texto('Demasiados registros para un Excel (máximo 10.000). Acota el período o los filtros.'));
+    }
+
+    // El Excel dice qué filtros tiene y si los montos están incompletos.
+    $nombresFiltro = [
+        'consultor_id' => ['Consultor', array_column(array_map(
+            static fn($c) => ['id' => $c['id'], 'n' => $c['nombres'] . ' ' . $c['apellidos']], $consultores
+        ), 'n', 'id')],
+        'cliente_id' => ['Cliente', array_column($clientes, 'nombre', 'id')],
+        'proyecto_id' => ['Proyecto', array_column(array_map(
+            static fn($p) => ['id' => $p['id'], 'n' => $p['cliente'] . ' / ' . $p['nombre']], $proyectos
+        ), 'n', 'id')],
+    ];
+    $detalle = [$periodo['etiqueta']];
+
+    foreach ($nombresFiltro as $campo => [$etiqueta, $nombres]) {
+        if ($filtros[$campo] !== null) {
+            $detalle[] = mejrTraducir($etiqueta) . ': ' . ($nombres[$filtros[$campo]] ?? '#' . $filtros[$campo]);
+        }
+    }
+
+    if ($sinTarifa !== '') {
+        $detalle[] = mejrTraducir($sinTarifa === 'cliente' ? 'Sin tarifa de cliente' : 'Sin tarifa de consultor');
+    }
+
+    if ($incompleto) {
+        $detalle[] = mejrTraducir('Incompleto: hay horas sin tarifa.');
+    }
+
+    require __DIR__ . '/config/exportar-horas.php';
+    descargarHorasExcel($registros, $totales['horas'], implode(' · ', $detalle), true);
+}
 
 $parametrosVista = ['desde' => $periodo['desdeMes'], 'hasta' => $periodo['hastaMes']]
     + array_filter($filtros, static fn($valor) => $valor !== null)

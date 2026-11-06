@@ -93,7 +93,7 @@ unset($_SESSION['aviso']);
   <main class="container-fluid mejr-ancho py-4">
     <?php if ($aviso): ?>
       <div class="alert alert-<?= escapar($aviso['tipo']) ?>" role="status">
-        <?= texto($aviso['texto']) ?>
+        <?= escapar($aviso['texto']) ?>
         <?php if (($aviso['detalle'] ?? '') !== ''): ?>
           <strong><?= escapar($aviso['detalle']) ?></strong>
         <?php endif; ?>

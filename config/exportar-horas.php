@@ -176,7 +176,7 @@ function descargarHorasExcel(
         (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($libro))->save($salida);
         rewind($salida);
 
-        $nombreArchivo = preg_replace('/[^A-Za-z0-9-]+/', '-', $etiquetas['archivo'] . mejrQuitarTildes($periodo));
+        $nombreArchivo = preg_replace('/[^A-Za-z0-9-]+/', '-', $etiquetas['archivo'] . mejrQuitarTildes(explode(' · ', $periodo)[0]));
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . trim($nombreArchivo, '-') . '.xlsx"');

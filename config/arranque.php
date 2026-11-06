@@ -53,11 +53,12 @@ function csrfValido(): bool
     return is_string($token) && hash_equals($_SESSION['csrf'], $token);
 }
 
-// Un solo aviso pendiente por sesión. $texto es una clave de traducción;
-// $detalle es texto libre (por ejemplo un nombre) que se muestra tal cual.
+// Un solo aviso pendiente por sesión. $texto es una clave de traducción y se
+// traduce aquí, en la página que la conoce, porque el aviso suele mostrarse en
+// otra; $detalle es texto libre (por ejemplo un nombre) que se muestra tal cual.
 function avisar(string $tipo, string $texto, string $detalle = ''): void
 {
-    $_SESSION['aviso'] = ['tipo' => $tipo, 'texto' => $texto, 'detalle' => $detalle];
+    $_SESSION['aviso'] = ['tipo' => $tipo, 'texto' => mejrTraducir($texto), 'detalle' => $detalle];
 }
 
 function redirigir(string $url): void

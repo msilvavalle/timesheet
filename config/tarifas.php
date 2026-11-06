@@ -7,7 +7,9 @@
 //   (si ya hay una con esa misma fecha, se reemplaza).
 // - Una tarifa con fecha anterior solo se acepta si es más antigua que todas las
 //   existentes: sirve para cargar el historial al empezar a usar las tarifas.
-// - Solo se borran tarifas del mes en curso o futuras.
+// - Solo se borran tarifas del mes en curso o futuras, o la más antigua (para
+//   corregir un error al cargar el historial: sus horas quedan sin tarifa hasta
+//   que se cargue la correcta). El historial se carga de la más nueva a la más antigua.
 
 $traducciones += [
     'Tarifa de cobro' => 'Billing rate',
@@ -26,11 +28,11 @@ $traducciones += [
     'Escribe un monto en dólares mayor que cero, con hasta dos decimales. Ejemplo: 120 o 120,50.' => 'Enter a US dollar amount greater than zero, with up to two decimals. Example: 120 or 120.50.',
     'Selecciona una fecha válida.' => 'Select a valid date.',
     'Esa fecha cae en un mes cerrado y ya hay tarifas posteriores: cambiarla alteraría montos ya calculados. Usa una fecha desde el 1 de este mes, o una anterior a la tarifa más antigua.' => 'That date falls in a closed month and later rates already exist: changing it would alter amounts already calculated. Use a date from the 1st of this month, or one earlier than the oldest rate.',
-    'Solo se pueden borrar tarifas del mes en curso o futuras.' => 'Only current-month or future rates can be deleted.',
+    'Solo se pueden borrar tarifas del mes en curso o futuras, o la más antigua.' => 'Only current-month or future rates, or the oldest one, can be deleted.',
     'Tarifa guardada.' => 'Rate saved.',
     'Tarifa borrada.' => 'Rate deleted.',
     'No se pudo guardar la tarifa. Intenta nuevamente.' => 'The rate could not be saved. Try again.',
-    'Las tarifas se aplican a cada hora según su fecha. Para corregir una tarifa de este mes o futura, bórrala y vuelve a cargarla.' => 'Rates apply to each hour by its date. To fix a current or future rate, delete it and add it again.',
+    'Las tarifas se aplican a cada hora según su fecha. Para corregir una tarifa de este mes, futura o la más antigua, bórrala y vuelve a cargarla. El historial se carga desde la tarifa más reciente hacia la más antigua.' => 'Rates apply to each hour by its date. To fix a current, future or the oldest rate, delete it and add it again. Load history from the most recent rate back to the oldest.',
     '¿Borrar esta tarifa?' => 'Delete this rate?'
 ];
 
@@ -198,14 +200,34 @@ function mejrGuardarTarifa(PDO $pdo, string $tipo, int $id, string $desde, int $
 
 function mejrBorrarTarifa(PDO $pdo, string $tipo, int $id, string $desde, int $adminId): void
 {
-    if ($desde < mejrAhora()->format('Y-m-01')) {
-        throw new DomainException('Solo se pueden borrar tarifas del mes en curso o futuras.');
-    }
-
     $config = MEJR_TABLAS_TARIFA[$tipo];
-    $pdo->prepare(
-        "DELETE FROM {$config['tabla']} WHERE {$config['columna']} = :id AND vigente_desde = :desde"
-    )->execute(['id' => $id, 'desde' => $desde]);
+    $pdo->beginTransaction();
+
+    try {
+        $bloqueo = $pdo->prepare($config['bloqueo']);
+        $bloqueo->execute(['id' => $id]);
+
+        $minima = $pdo->prepare(
+            "SELECT MIN(vigente_desde) FROM {$config['tabla']} WHERE {$config['columna']} = :id FOR UPDATE"
+        );
+        $minima->execute(['id' => $id]);
+
+        if ($desde < mejrAhora()->format('Y-m-01') && $desde !== $minima->fetchColumn()) {
+            throw new DomainException('Solo se pueden borrar tarifas del mes en curso o futuras, o la más antigua.');
+        }
+
+        $pdo->prepare(
+            "DELETE FROM {$config['tabla']} WHERE {$config['columna']} = :id AND vigente_desde = :desde"
+        )->execute(['id' => $id, 'desde' => $desde]);
+
+        $pdo->commit();
+    } catch (Throwable $excepcion) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $excepcion;
+    }
 
     error_log('MEJR: administrador ' . $adminId . ' borró la tarifa de ' . $tipo . ' ' . $id . ' desde ' . $desde . '.');
 }

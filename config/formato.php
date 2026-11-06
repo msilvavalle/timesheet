@@ -127,6 +127,14 @@ function mejrPeriodoMeses(array $get, int $maximoMeses = 36): ?array
     ];
 }
 
+// Parámetros desde/hasta de los últimos 12 meses, incluido el actual.
+function mejrUltimos12Meses(): array
+{
+    $ahora = mejrAhora();
+
+    return ['desde' => $ahora->modify('first day of -11 months')->format('Y-m'), 'hasta' => $ahora->format('Y-m')];
+}
+
 // Horas escritas por una persona ("2,5", "8", "0.25") a centésimas, o null.
 function mejrLeerHoras(string $texto): ?int
 {

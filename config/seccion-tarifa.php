@@ -53,7 +53,7 @@ foreach ($historialTarifas as $filaTarifa) {
           </form>
 
           <p class="small text-secondary">
-            <?= texto('Las tarifas se aplican a cada hora según su fecha. Para corregir una tarifa de este mes o futura, bórrala y vuelve a cargarla.') ?>
+            <?= texto('Las tarifas se aplican a cada hora según su fecha. Para corregir una tarifa de este mes, futura o la más antigua, bórrala y vuelve a cargarla. El historial se carga desde la tarifa más reciente hacia la más antigua.') ?>
           </p>
 
           <?php if (!$historialTarifas): ?>
@@ -70,13 +70,14 @@ foreach ($historialTarifas as $filaTarifa) {
                 </tr>
               </thead>
               <tbody>
+                <?php $masAntigua = end($historialTarifas)['vigente_desde']; ?>
                 <?php foreach ($historialTarifas as $filaTarifa): ?>
                   <tr>
                     <td><?= escapar(mejrFecha($filaTarifa['vigente_desde'])) ?></td>
                     <td class="mejr-numero"><?= escapar(mejrUsd((int) $filaTarifa['centavos_hora'])) ?></td>
                     <td class="small"><?= escapar((string) $filaTarifa['autor']) ?></td>
                     <td class="text-end">
-                      <?php if ($filaTarifa['vigente_desde'] >= $inicioMesTarifa): ?>
+                      <?php if ($filaTarifa['vigente_desde'] >= $inicioMesTarifa || $filaTarifa['vigente_desde'] === $masAntigua): ?>
                         <form method="post" action="<?= escapar($urlFicha('tarifa')) ?>" data-confirmar="<?= texto('¿Borrar esta tarifa?') ?>">
                           <input type="hidden" name="csrf" value="<?= escapar($_SESSION['csrf']) ?>">
                           <input type="hidden" name="accion" value="tarifa_borrar">

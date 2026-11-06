@@ -26,7 +26,7 @@ $traducciones += [
     'El cliente está inactivo: los consultores no ven este proyecto aunque esté activo.' => 'The client is inactive: consultants cannot see this project even if it is active.',
     'Horas de' => 'Hours for',
     'Sin horas registradas este mes.' => 'No hours logged this month.',
-    'Ver todas sus horas' => 'View all its hours',
+    'Ver sus horas de los últimos 12 meses' => 'View its hours for the last 12 months',
     'Proyecto activado.' => 'Project activated.',
     'Proyecto desactivado. Los consultores ya no lo ven; las horas se conservan.' => 'Project deactivated. Consultants no longer see it; hours are preserved.',
     'No se realizó el cambio. Revisa el estado actual.' => 'No change was made. Check the current status.',
@@ -107,7 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $marcados = is_array($marcados) ? array_filter(array_map('validarId', $marcados)) : [];
 
         try {
-            [$activadas, $desactivadas] = mejrGuardarAsignaciones($pdo, 'proyecto', $proyectoId, $marcados);
+            // Sin la lista de opciones mostradas se consideran todas las disponibles.
+            $mostrados = isset($_POST['mostrados']) && is_array($_POST['mostrados'])
+                ? array_filter(array_map('validarId', $_POST['mostrados']))
+                : null;
+            [$activadas, $desactivadas] = mejrGuardarAsignaciones($pdo, 'proyecto', $proyectoId, $marcados, $mostrados);
             error_log(
                 'MEJR: administrador ' . $adminId . ' cambió las asignaciones del proyecto ' . $proyectoId .
                 ' (+' . $activadas . ' / -' . $desactivadas . ').'
@@ -121,7 +125,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accion === 'estado') {
-        $nuevoEstado = ($_POST['estado'] ?? '') === 'activar' ? 1 : 0;
+        $estadoPedido = $_POST['estado'] ?? '';
+
+        if (!in_array($estadoPedido, ['activar', 'desactivar'], true)) {
+            http_response_code(400);
+            exit(texto('Acción no válida. Vuelve a abrir la ficha.'));
+        }
+
+        $nuevoEstado = $estadoPedido === 'activar' ? 1 : 0;
         $volver = ($_POST['volver'] ?? '') === 'lista' ? 'clientes.php' : $urlFicha('estado');
 
         try {
@@ -198,7 +209,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
         </h1>
         <p class="text-secondary mb-0"><?= escapar($proyecto['cliente']) ?></p>
       </div>
-      <a class="btn btn-outline-dark" href="horas-admin.php?proyecto_id=<?= escapar($proyectoId) ?>"><?= texto('Ver todas sus horas') ?></a>
+      <a class="btn btn-outline-dark" href="<?= escapar('horas-admin.php?' . http_build_query(['proyecto_id' => $proyectoId] + mejrUltimos12Meses())) ?>"><?= texto('Ver sus horas de los últimos 12 meses') ?></a>
     </div>
 
     <?php if ((int) $proyecto['cliente_activo'] !== 1): ?>
@@ -261,6 +272,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
             <div id="lista-consultores" class="mejr-casillas">
               <?php foreach ($opciones as $opcion): ?>
                 <div class="form-check" data-filtro-item>
+                  <input type="hidden" name="mostrados[]" value="<?= escapar($opcion['id']) ?>">
                   <input class="form-check-input" type="checkbox" name="consultores[]"
                     id="consultor-<?= escapar($opcion['id']) ?>" value="<?= escapar($opcion['id']) ?>"
                     <?= in_array((int) $opcion['id'], $asignados, true) ? 'checked' : '' ?>>

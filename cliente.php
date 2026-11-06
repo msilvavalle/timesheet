@@ -129,13 +129,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errores['proyectos'] = 'Escribe un nombre de proyecto de entre 1 y 150 caracteres, sin saltos de línea.';
         } else {
             try {
-                $pdo->prepare('INSERT INTO proyectos (cliente_id, nombre, activo) VALUES (:cliente, :nombre, 1)')
-                    ->execute(['cliente' => $clienteId, 'nombre' => $nombreProyecto]);
+                $insertar = $pdo->prepare(
+                    'INSERT INTO proyectos (cliente_id, nombre, activo)
+                     SELECT id, :nombre, 1 FROM clientes WHERE id = :cliente AND activo = 1'
+                );
+                $insertar->execute(['cliente' => $clienteId, 'nombre' => $nombreProyecto]);
+
+                if ($insertar->rowCount() !== 1) {
+                    throw new DomainException('El cliente está inactivo. Actívalo antes de agregar proyectos.');
+                }
+
                 $nuevoId = (int) $pdo->lastInsertId();
 
                 error_log('MEJR: administrador ' . $adminId . ' creó el proyecto ' . $nuevoId . '.');
                 avisar('success', 'Proyecto creado. Asígnale consultores:', $nombreProyecto);
                 redirigir('proyecto.php?id=' . $nuevoId . '#consultores');
+            } catch (DomainException $e) {
+                $errores['proyectos'] = $e->getMessage();
             } catch (PDOException $e) {
                 if ((int) ($e->errorInfo[1] ?? 0) === 1062) {
                     $errores['proyectos'] = 'Ese proyecto ya está registrado para este cliente.';
@@ -154,7 +164,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accion === 'estado') {
-        $nuevoEstado = ($_POST['estado'] ?? '') === 'activar' ? 1 : 0;
+        $estadoPedido = $_POST['estado'] ?? '';
+
+        if (!in_array($estadoPedido, ['activar', 'desactivar'], true)) {
+            http_response_code(400);
+            exit(texto('Acción no válida. Vuelve a abrir la ficha.'));
+        }
+
+        $nuevoEstado = $estadoPedido === 'activar' ? 1 : 0;
         $volver = ($_POST['volver'] ?? '') === 'lista' ? 'clientes.php' : $urlFicha('estado');
 
         try {
@@ -229,7 +246,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
         </h1>
       </div>
       <?php if ($cliente): ?>
-        <a class="btn btn-outline-dark" href="horas-admin.php?cliente_id=<?= escapar($clienteId) ?>"><?= texto('Ver todas sus horas') ?></a>
+        <a class="btn btn-outline-dark" href="<?= escapar('horas-admin.php?' . http_build_query(['cliente_id' => $clienteId] + mejrUltimos12Meses())) ?>"><?= texto('Ver sus horas de los últimos 12 meses') ?></a>
       <?php endif; ?>
     </div>
 

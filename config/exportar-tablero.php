@@ -11,7 +11,8 @@ function descargarTableroExcel(
     array $porConsultor,
     array $clientes,
     array $proyectos,
-    array $consultores
+    array $consultores,
+    bool $incompleto = false
 ): void {
     global $idioma;
 
@@ -78,6 +79,14 @@ function descargarTableroExcel(
                 'US$ con la tarifa vigente en la fecha de cada registro. Horas sin tarifa suman 0.',
                 'US$ using the rate in force on each entry date. Hours without a rate count as 0.'
             ));
+            if ($incompleto) {
+                $hoja->setCellValue('A4', $t(
+                    'ATENCIÓN: hay horas sin tarifa en el período; los montos están incompletos.',
+                    'WARNING: some hours in the period have no rate; amounts are incomplete.'
+                ));
+                $hoja->getStyle('A4')->getFont()->setBold(true)->getColor()->setARGB('FFB45309');
+            }
+
             $hoja->fromArray($datosHoja['columnas'], null, 'A5');
 
             $fila = 6;
@@ -122,7 +131,7 @@ function descargarTableroExcel(
         (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($libro))->save($salida);
         rewind($salida);
 
-        $nombre = preg_replace('/[^A-Za-z0-9-]+/', '-', 'MEJR-dashboard-' . strtr($periodo, [
+        $nombre = preg_replace('/[^A-Za-z0-9-]+/', '-', 'MEJR-dashboard-' . strtr(explode(' · ', $periodo)[0], [
             'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n', '–' => '-',
         ]));
 

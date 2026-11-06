@@ -45,7 +45,7 @@ $traducciones += [
     'Guardar proyectos' => 'Save projects',
     'Horas de' => 'Hours for',
     'Sin horas registradas este mes.' => 'No hours logged this month.',
-    'Ver todas sus horas' => 'View all their hours',
+    'Ver sus horas de los últimos 12 meses' => 'View their hours for the last 12 months',
     'La contraseña actual del consultor no se puede mostrar. Puedes asignarle una nueva si olvidó la anterior.' => 'The consultant’s current password cannot be displayed. You can set a new one if they forgot it.',
     'Tu contraseña de administrador' => 'Your administrator password',
     'Escribe la contraseña de tu propia cuenta para autorizar el cambio.' => 'Enter your own account password to authorize the change.',
@@ -223,7 +223,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $marcados = is_array($marcados) ? array_filter(array_map('validarId', $marcados)) : [];
 
         try {
-            [$activadas, $desactivadas] = mejrGuardarAsignaciones($pdo, 'consultor', $consultorId, $marcados);
+            // Sin la lista de opciones mostradas se consideran todas las disponibles.
+            $mostrados = isset($_POST['mostrados']) && is_array($_POST['mostrados'])
+                ? array_filter(array_map('validarId', $_POST['mostrados']))
+                : null;
+            [$activadas, $desactivadas] = mejrGuardarAsignaciones($pdo, 'consultor', $consultorId, $marcados, $mostrados);
             error_log(
                 'MEJR: administrador ' . $adminId . ' cambió las asignaciones del consultor ' . $consultorId .
                 ' (+' . $activadas . ' / -' . $desactivadas . ').'
@@ -326,7 +330,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($accion === 'estado') {
-        $nuevoEstado = ($_POST['estado'] ?? '') === 'activar' ? 1 : 0;
+        $estadoPedido = $_POST['estado'] ?? '';
+
+        if (!in_array($estadoPedido, ['activar', 'desactivar'], true)) {
+            http_response_code(400);
+            exit(texto('Acción no válida. Vuelve a abrir la ficha.'));
+        }
+
+        $nuevoEstado = $estadoPedido === 'activar' ? 1 : 0;
         $volver = ($_POST['volver'] ?? '') === 'lista' ? 'consultores.php' : $urlFicha('estado');
 
         try {
@@ -431,7 +442,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
 
       <?php if ($consultor): ?>
         <a class="btn btn-outline-dark"
-          href="horas-admin.php?consultor_id=<?= escapar($consultorId) ?>"><?= texto('Ver todas sus horas') ?></a>
+          href="<?= escapar('horas-admin.php?' . http_build_query(['consultor_id' => $consultorId] + mejrUltimos12Meses())) ?>"><?= texto('Ver sus horas de los últimos 12 meses') ?></a>
       <?php endif; ?>
     </div>
 
@@ -552,6 +563,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
                       <p class="fw-semibold mb-1 mt-2"><?= escapar($grupoActual) ?></p>
                   <?php endif; ?>
                   <div class="form-check" data-filtro-item>
+                    <input type="hidden" name="mostrados[]" value="<?= escapar($opcion['id']) ?>">
                     <input class="form-check-input" type="checkbox" name="proyectos[]"
                       id="proyecto-<?= escapar($opcion['id']) ?>" value="<?= escapar($opcion['id']) ?>"
                       <?= in_array((int) $opcion['id'], $asignados, true) ? 'checked' : '' ?>>
@@ -578,7 +590,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
               <?= escapar(mejrHoras($totalMes)) ?>
             </h2>
             <a class="btn btn-sm btn-outline-secondary"
-              href="horas-admin.php?consultor_id=<?= escapar($consultorId) ?>"><?= texto('Ver todas sus horas') ?></a>
+              href="<?= escapar('horas-admin.php?' . http_build_query(['consultor_id' => $consultorId] + mejrUltimos12Meses())) ?>"><?= texto('Ver sus horas de los últimos 12 meses') ?></a>
           </div>
 
           <?php if (!$horasMes): ?>
