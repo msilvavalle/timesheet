@@ -286,8 +286,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirigir('mis-horas.php');
     }
 
+    // El proyecto que se agrega al selector sale del registro guardado de este
+    // consultor, nunca del POST: así no se puede consultar un proyecto ajeno.
     if ($registroId !== null) {
-        $editando = ['id' => $registroId, 'proyecto_id' => $datos['proyecto_id']];
+        $registroGuardado = $buscarRegistro($registroId);
+        $editando = $registroGuardado
+            ? ['id' => $registroId, 'proyecto_id' => (string) $registroGuardado['proyecto_id']]
+            : null;
     }
 }
 
