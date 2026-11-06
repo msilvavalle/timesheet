@@ -51,6 +51,47 @@ const MEJR_SQL_TARIFA_CONSULTOR =
       WHERE tu.consultor_id = r.consultor_id AND tu.vigente_desde <= r.fecha
       ORDER BY tu.vigente_desde DESC LIMIT 1)';
 
+// Registros de un período [desde, hasta) con la tarifa vigente en la fecha de
+// cada uno, como tabla derivada para envolver en otra consulta. Filtros
+// opcionales: consultor_id, cliente_id, proyecto_id (enteros o null).
+function mejrSqlValorizados(string $desde, string $hasta, array $filtros = []): array
+{
+    $sql = 'SELECT r.id, r.fecha, r.horas, r.descripcion, r.consultor_id, r.proyecto_id, p.cliente_id,
+                   ' . MEJR_SQL_TARIFA_CLIENTE . ' AS tarifa_cliente,
+                   ' . MEJR_SQL_TARIFA_CONSULTOR . ' AS tarifa_consultor
+            FROM registros_horas r
+            INNER JOIN proyectos p ON p.id = r.proyecto_id
+            WHERE r.fecha >= :desde AND r.fecha < :hasta';
+    $parametros = ['desde' => $desde, 'hasta' => $hasta];
+    $columnas = ['consultor_id' => 'r.consultor_id', 'cliente_id' => 'p.cliente_id', 'proyecto_id' => 'r.proyecto_id'];
+
+    foreach ($columnas as $campo => $columna) {
+        if (($filtros[$campo] ?? null) !== null) {
+            $sql .= " AND $columna = :$campo";
+            $parametros[$campo] = (int) $filtros[$campo];
+        }
+    }
+
+    return [$sql, $parametros];
+}
+
+// Monto exacto en centésimas de centavo: horas en centésimas × centavos por
+// hora. Así las sumas no acumulan redondeos; se redondea solo al mostrar.
+function mejrMontoExacto(int $centesimas, ?int $centavosHora): ?int
+{
+    return $centavosHora === null ? null : $centesimas * $centavosHora;
+}
+
+function mejrCentavosDeExacto(int $exacto): int
+{
+    return $exacto >= 0 ? intdiv($exacto + 50, 100) : -intdiv(-$exacto + 50, 100);
+}
+
+function mejrUsdExacto(?int $exacto): string
+{
+    return $exacto === null ? '—' : mejrUsd(mejrCentavosDeExacto($exacto));
+}
+
 // Dólares escritos por una persona ("120", "120,5", "120.50") a centavos, o null.
 function mejrLeerUsd(string $texto): ?int
 {

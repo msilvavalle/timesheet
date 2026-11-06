@@ -94,6 +94,39 @@ function mejrMesValido($valor): ?DateTimeImmutable
     return new DateTimeImmutable($valor . '-01', new DateTimeZone(MEJR_ZONA));
 }
 
+// Rango de meses de un GET: desde/hasta "AAAA-MM", o mes= que fija ambos.
+// Por defecto el mes en curso. Devuelve null si es inválido o muy largo.
+// 'fin' es el primer día del mes siguiente a 'hasta' (límite exclusivo).
+function mejrPeriodoMeses(array $get, int $maximoMeses = 36): ?array
+{
+    $mes = $get['mes'] ?? null;
+    $desde = mejrMesValido($get['desde'] ?? $mes ?? mejrAhora()->format('Y-m'));
+    $hasta = $desde ? mejrMesValido($get['hasta'] ?? $mes ?? $desde->format('Y-m')) : null;
+
+    if (!$desde || !$hasta || $hasta < $desde) {
+        return null;
+    }
+
+    $meses = ((int) $hasta->format('Y') - (int) $desde->format('Y')) * 12
+        + (int) $hasta->format('n') - (int) $desde->format('n') + 1;
+
+    if ($meses > $maximoMeses) {
+        return null;
+    }
+
+    return [
+        'desde' => $desde,
+        'hasta' => $hasta,
+        'fin' => $hasta->modify('+1 month'),
+        'meses' => $meses,
+        'desdeMes' => $desde->format('Y-m'),
+        'hastaMes' => $hasta->format('Y-m'),
+        'etiqueta' => $meses === 1
+            ? mejrNombreMes($desde)
+            : mejrNombreMes($desde) . ' – ' . mejrNombreMes($hasta),
+    ];
+}
+
 // Horas escritas por una persona ("2,5", "8", "0.25") a centésimas, o null.
 function mejrLeerHoras(string $texto): ?int
 {
