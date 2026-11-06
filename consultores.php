@@ -3,6 +3,7 @@
 // cada uno en su fila. Reemplaza a usuarios.php y al listado de asignaciones.php.
 $rolPagina = 'administrador';
 require __DIR__ . '/config/arranque.php';
+require_once __DIR__ . '/config/tarifas.php';
 
 $traducciones += [
     'Administra el acceso, los proyectos y las horas de cada consultor.' => 'Manage each consultant’s access, projects and hours.',
@@ -83,6 +84,8 @@ foreach ($consultaHoras as $fila) {
     $horasPorConsultor[(int) $fila['consultor_id']] = mejrEscalar($fila['horas'], 2);
 }
 
+$tarifas = mejrTarifasVigentes($pdo, 'consultor');
+
 $faltaCorreo = (bool) array_filter($consultores, static fn($fila) => empty($fila['correo']));
 
 $tituloPagina = 'Consultores';
@@ -140,6 +143,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
                 <th scope="col"><?= texto('Acceso') ?></th>
                 <th scope="col"><?= texto('Proyectos') ?></th>
                 <th scope="col" class="mejr-numero"><?= texto('Horas del mes') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Tarifa') ?></th>
                 <th scope="col"><?= texto('Estado') ?></th>
                 <th scope="col" class="text-end"><?= texto('Acciones') ?></th>
               </tr>
@@ -179,6 +183,13 @@ require __DIR__ . '/config/plantilla-inicio.php';
                     <?php endif; ?>
                   </td>
                   <td class="mejr-numero"><?= escapar(mejrHoras($horasPorConsultor[$id] ?? 0)) ?></td>
+                  <td class="mejr-numero">
+                    <?php if (isset($tarifas[$id])): ?>
+                      <?= escapar(mejrUsd($tarifas[$id])) ?>/h
+                    <?php else: ?>
+                      <span class="badge text-bg-warning"><?= texto('Sin tarifa') ?></span>
+                    <?php endif; ?>
+                  </td>
                   <td>
                     <span class="badge <?= $activo ? 'text-bg-success' : 'text-bg-secondary' ?>">
                       <?= texto($activo ? 'Activo' : 'Inactivo') ?>
@@ -190,6 +201,8 @@ require __DIR__ . '/config/plantilla-inicio.php';
                         aria-label="<?= escapar(mejrTraducir('Editar') . ': ' . $nombre) ?>"><?= texto('Editar') ?></a>
                       <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($ficha . '#proyectos') ?>"
                         aria-label="<?= escapar(mejrTraducir('Proyectos') . ': ' . $nombre) ?>"><?= texto('Proyectos') ?></a>
+                      <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($ficha . '#tarifa') ?>"
+                        aria-label="<?= escapar(mejrTraducir('Tarifa') . ': ' . $nombre) ?>"><?= texto('Tarifa') ?></a>
                       <a class="btn btn-sm btn-outline-secondary" href="horas-admin.php?consultor_id=<?= $id ?>"
                         aria-label="<?= escapar(mejrTraducir('Horas') . ': ' . $nombre) ?>"><?= texto('Horas') ?></a>
                       <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($ficha . '#clave') ?>"

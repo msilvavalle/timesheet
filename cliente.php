@@ -3,6 +3,7 @@
 // (con alta de proyecto en la misma página) y estado.
 $rolPagina = 'administrador';
 require __DIR__ . '/config/arranque.php';
+require_once __DIR__ . '/config/tarifas.php';
 
 $traducciones += [
     'Nuevo cliente' => 'New client',
@@ -64,6 +65,9 @@ $urlFicha = static fn(string $ancla = ''): string =>
 $nombre = $cliente ? $cliente['nombre'] : '';
 $nombreProyecto = '';
 $errores = ['datos' => '', 'proyectos' => ''];
+$errorTarifa = '';
+$valorTarifa = '';
+$desdeTarifa = '';
 $nombreValido = static fn(string $texto): bool => preg_match('/\A[^\p{C}]{1,150}\z/u', $texto) === 1;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -73,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $accion = $_POST['accion'] ?? '';
-    $permitidas = $cliente ? ['datos', 'proyecto_nuevo', 'estado'] : ['crear'];
+    $permitidas = $cliente ? ['datos', 'proyecto_nuevo', 'tarifa', 'tarifa_borrar', 'estado'] : ['crear'];
 
     if (!is_string($accion) || !in_array($accion, $permitidas, true)) {
         http_response_code(400);
@@ -143,6 +147,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($accion === 'tarifa' || $accion === 'tarifa_borrar') {
+        $valorTarifa = is_string($_POST['valor'] ?? null) ? $_POST['valor'] : '';
+        $desdeTarifa = is_string($_POST['desde'] ?? null) ? $_POST['desde'] : '';
+        $errorTarifa = mejrProcesarTarifa($pdo, 'cliente', $clienteId, $accion, $urlFicha('tarifa'));
+    }
+
     if ($accion === 'estado') {
         $nuevoEstado = ($_POST['estado'] ?? '') === 'activar' ? 1 : 0;
         $volver = ($_POST['volver'] ?? '') === 'lista' ? 'clientes.php' : $urlFicha('estado');
@@ -189,6 +199,8 @@ if ($cliente) {
 }
 
 $activo = $cliente && (int) $cliente['activo'] === 1;
+$tipoTarifa = 'cliente';
+$historialTarifas = $cliente ? mejrHistorialTarifas($pdo, 'cliente', $clienteId) : [];
 
 $tituloPagina = $cliente ? 'Clientes y proyectos' : 'Nuevo cliente';
 $seccion = 'clientes';
@@ -225,6 +237,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
       <nav class="mejr-ficha-indice" aria-label="<?= texto('Secciones de la ficha') ?>">
         <a class="btn btn-sm btn-outline-secondary" href="#datos"><?= texto('Datos') ?></a>
         <a class="btn btn-sm btn-outline-secondary" href="#proyectos"><?= texto('Proyectos') ?></a>
+        <a class="btn btn-sm btn-outline-secondary" href="#tarifa"><?= texto('Tarifa') ?></a>
         <a class="btn btn-sm btn-outline-secondary" href="#estado"><?= texto('Estado') ?></a>
       </nav>
     <?php endif; ?>
@@ -316,6 +329,8 @@ require __DIR__ . '/config/plantilla-inicio.php';
             </div>
           <?php endif; ?>
         </section>
+
+<?php require __DIR__ . '/config/seccion-tarifa.php'; ?>
 
         <section id="estado" class="bg-white border rounded p-4" aria-labelledby="titulo-estado">
           <h2 id="titulo-estado" class="h5"><?= texto('Estado') ?></h2>

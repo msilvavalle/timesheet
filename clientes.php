@@ -3,6 +3,7 @@
 // cada fila. Reemplaza al alta de clientes.php y a proyectos.php.
 $rolPagina = 'administrador';
 require __DIR__ . '/config/arranque.php';
+require_once __DIR__ . '/config/tarifas.php';
 
 $traducciones += [
     'Administra clientes, sus proyectos y quién trabaja en cada uno.' => 'Manage clients, their projects and who works on each one.',
@@ -56,6 +57,7 @@ foreach ($pdo->query('SELECT proyecto_id, SUM(horas) AS horas FROM registros_hor
     $horasTotal[(int) $fila['proyecto_id']] = mejrEscalar($fila['horas'], 2);
 }
 
+$tarifas = mejrTarifasVigentes($pdo, 'cliente');
 $proyectosPorCliente = [];
 
 foreach ($proyectos as $proyecto) {
@@ -103,6 +105,7 @@ $botonEstado = static function (string $accion, string $estadoActual, string $co
               <tr>
                 <th scope="col"><?= texto('Cliente / Proyecto') ?></th>
                 <th scope="col"><?= texto('Detalle') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Tarifa') ?></th>
                 <th scope="col" class="mejr-numero"><?= texto('Horas del mes') ?></th>
                 <th scope="col" class="mejr-numero"><?= texto('Horas acumuladas') ?></th>
                 <th scope="col"><?= texto('Estado') ?></th>
@@ -129,6 +132,13 @@ $botonEstado = static function (string $accion, string $estadoActual, string $co
                 <tr class="mejr-fila-grupo">
                   <td><a href="<?= escapar($fichaCliente) ?>"><?= escapar($cliente['nombre']) ?></a></td>
                   <td class="small"><?= $activos ?> <?= texto('proyectos activos') ?></td>
+                  <td class="mejr-numero">
+                    <?php if (isset($tarifas[$clienteId])): ?>
+                      <?= escapar(mejrUsd($tarifas[$clienteId])) ?>/h
+                    <?php else: ?>
+                      <span class="badge text-bg-warning"><?= texto('Sin tarifa') ?></span>
+                    <?php endif; ?>
+                  </td>
                   <td class="mejr-numero"><?= escapar(mejrHoras($mesCliente)) ?></td>
                   <td class="mejr-numero"><?= escapar(mejrHoras($totalCliente)) ?></td>
                   <td>
@@ -140,6 +150,7 @@ $botonEstado = static function (string $accion, string $estadoActual, string $co
                     <div class="mejr-acciones">
                       <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaCliente . '#datos') ?>"><?= texto('Editar') ?></a>
                       <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaCliente . '#proyectos') ?>"><?= texto('Nuevo proyecto') ?></a>
+                      <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaCliente . '#tarifa') ?>"><?= texto('Tarifa') ?></a>
                       <a class="btn btn-sm btn-outline-secondary" href="horas-admin.php?cliente_id=<?= $clienteId ?>"><?= texto('Horas') ?></a>
                       <?= $botonEstado(
                           $fichaCliente,
@@ -153,7 +164,7 @@ $botonEstado = static function (string $accion, string $estadoActual, string $co
 
                 <?php if (!$suyos): ?>
                   <tr class="mejr-fila-hija">
-                    <td colspan="6" class="small text-secondary"><?= texto('Sin proyectos todavía.') ?></td>
+                    <td colspan="7" class="small text-secondary"><?= texto('Sin proyectos todavía.') ?></td>
                   </tr>
                 <?php endif; ?>
 
@@ -176,6 +187,7 @@ $botonEstado = static function (string $accion, string $estadoActual, string $co
                         </div>
                       <?php endif; ?>
                     </td>
+                    <td></td>
                     <td class="mejr-numero"><?= escapar(mejrHoras($horasMes[$proyectoId] ?? 0)) ?></td>
                     <td class="mejr-numero"><?= escapar(mejrHoras($horasTotal[$proyectoId] ?? 0)) ?></td>
                     <td>

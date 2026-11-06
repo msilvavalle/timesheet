@@ -5,6 +5,7 @@
 $rolPagina = 'administrador';
 require __DIR__ . '/config/arranque.php';
 require_once __DIR__ . '/config/asignaciones.php';
+require_once __DIR__ . '/config/tarifas.php';
 
 $traducciones += [
     'Nuevo consultor' => 'New consultant',
@@ -108,6 +109,9 @@ if ($consultor) {
 }
 
 $errores = ['datos' => [], 'clave' => [], 'proyectos' => []];
+$errorTarifa = '';
+$valorTarifa = '';
+$desdeTarifa = '';
 
 function validarDatosConsultor(array $datos): array
 {
@@ -148,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $accion = $_POST['accion'] ?? '';
-    $permitidas = $consultor ? ['datos', 'proyectos', 'clave', 'estado'] : ['crear'];
+    $permitidas = $consultor ? ['datos', 'proyectos', 'tarifa', 'tarifa_borrar', 'clave', 'estado'] : ['crear'];
 
     if (!is_string($accion) || !in_array($accion, $permitidas, true)) {
         http_response_code(400);
@@ -230,6 +234,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log('MEJR: no se pudieron guardar asignaciones de un consultor.');
             $errores['proyectos'][] = 'No se pudo guardar el cambio. Inténtalo nuevamente.';
         }
+    }
+
+    if ($accion === 'tarifa' || $accion === 'tarifa_borrar') {
+        $valorTarifa = is_string($_POST['valor'] ?? null) ? $_POST['valor'] : '';
+        $desdeTarifa = is_string($_POST['desde'] ?? null) ? $_POST['desde'] : '';
+        $errorTarifa = mejrProcesarTarifa($pdo, 'consultor', $consultorId, $accion, $urlFicha('tarifa'));
     }
 
     if ($accion === 'clave') {
@@ -383,6 +393,9 @@ if ($consultor) {
     }
 }
 
+$tipoTarifa = 'consultor';
+$historialTarifas = $consultor ? mejrHistorialTarifas($pdo, 'consultor', $consultorId) : [];
+
 $nombreConsultor = $consultor ? $consultor['nombres'] . ' ' . $consultor['apellidos'] : '';
 $activo = $consultor && (int) $consultor['activo'] === 1;
 
@@ -426,6 +439,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
       <nav class="mejr-ficha-indice" aria-label="<?= texto('Secciones de la ficha') ?>">
         <a class="btn btn-sm btn-outline-secondary" href="#datos"><?= texto('Datos') ?></a>
         <a class="btn btn-sm btn-outline-secondary" href="#proyectos"><?= texto('Proyectos asignados') ?></a>
+        <a class="btn btn-sm btn-outline-secondary" href="#tarifa"><?= texto('Tarifa') ?></a>
         <a class="btn btn-sm btn-outline-secondary" href="#horas"><?= texto('Horas del mes') ?></a>
         <a class="btn btn-sm btn-outline-secondary" href="#clave"><?= texto('Contraseña') ?></a>
         <a class="btn btn-sm btn-outline-secondary" href="#estado"><?= texto('Estado') ?></a>
@@ -554,6 +568,8 @@ require __DIR__ . '/config/plantilla-inicio.php';
             </form>
           <?php endif; ?>
         </section>
+
+<?php require __DIR__ . '/config/seccion-tarifa.php'; ?>
 
         <section id="horas" class="bg-white border rounded p-4" aria-labelledby="titulo-horas">
           <div class="mejr-titulo">
