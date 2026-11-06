@@ -1,277 +1,207 @@
 <?php
-session_name('mejr_timesheet');
-session_start([
-    'use_strict_mode' => true,
-    'gc_maxlifetime' => 1800,
-    'use_only_cookies' => true,
-    'cookie_httponly' => true,
-    'cookie_samesite' => 'Lax',
-    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
-]);
-header('Cache-Control: no-store');
-
-require_once __DIR__ . '/config/idioma.php';
+// Clientes y sus proyectos en una sola tabla agrupada, con las acciones de
+// cada fila. Reemplaza al alta de clientes.php y a proyectos.php.
+$rolPagina = 'administrador';
+require __DIR__ . '/config/arranque.php';
 
 $traducciones += [
-    'Idioma' => 'Language',
-    'Clientes' => 'Clients',
-    'Administración' => 'Administration',
-    'Acceso reservado para administración.' => 'Access restricted to administrators.',
-    'Solicitud no válida. Vuelve a abrir el formulario.' => 'Invalid request. Open the form again.',
-    'Escribe un nombre de cliente de entre 1 y 150 caracteres, sin saltos de línea.' => 'Enter a client name between 1 and 150 characters, without line breaks.',
-    'Ese cliente ya está registrado.' => 'That client is already registered.',
-    'No se pudo guardar el cliente. Intenta nuevamente.' => 'The client could not be saved. Try again.',
-    'Volver al panel' => 'Back to dashboard',
-    'Registra las empresas a las que pertenecen los proyectos.' => 'Register the companies that the projects belong to.',
-    'Cliente registrado:' => 'Client registered:',
-    'Nombre del cliente' => 'Client name',
-    'Guardar cliente' => 'Save client',
-    'Clientes registrados' => 'Registered clients',
-    'Todavía no hay clientes registrados.' => 'No clients have been registered yet.',
-    'Cliente' => 'Client',
-    'Estado' => 'Status',
-    'Activo' => 'Active',
-    'Inactivo' => 'Inactive'
+    'Administra clientes, sus proyectos y quién trabaja en cada uno.' => 'Manage clients, their projects and who works on each one.',
+    'Nuevo cliente' => 'New client',
+    'Nuevo proyecto' => 'New project',
+    'Cliente / Proyecto' => 'Client / Project',
+    'Detalle' => 'Details',
+    'Horas acumuladas' => 'Total hours',
+    'Consultores' => 'Consultants',
+    'proyectos activos' => 'active projects',
+    'Sin consultores' => 'No consultants',
+    'Sin proyectos todavía.' => 'No projects yet.',
+    'Todavía no hay clientes. Crea el primero con Nuevo cliente.' => 'There are no clients yet. Create the first one with New client.',
+    '¿Confirmas el cambio de estado de este cliente? Si lo desactivas, sus consultores dejarán de ver sus proyectos.' => 'Confirm this client status change? If you deactivate it, consultants will stop seeing its projects.',
+    '¿Confirmas el cambio de estado de este proyecto? Si lo desactivas, los consultores dejarán de verlo.' => 'Confirm this project status change? If you deactivate it, consultants will stop seeing it.'
 ];
 
-if (!isset($_SESSION['usuario_id']) || time() - ($_SESSION['ultima_actividad'] ?? 0) > 1800) {
-    $_SESSION = [];
-    header('Location: login.php');
-    exit;
+$clientes = $pdo->query('SELECT id, nombre, activo FROM clientes ORDER BY activo DESC, nombre, id')->fetchAll();
+$proyectos = $pdo->query('SELECT id, cliente_id, nombre, activo FROM proyectos ORDER BY activo DESC, nombre, id')->fetchAll();
+
+$consultoresPorProyecto = [];
+
+foreach ($pdo->query(
+    "SELECT pc.proyecto_id, CONCAT(u.nombres, ' ', u.apellidos) AS nombre
+     FROM proyecto_consultor pc
+     INNER JOIN usuarios u ON u.id = pc.consultor_id
+     WHERE pc.activo = 1 AND u.activo = 1
+     ORDER BY u.apellidos, u.nombres"
+) as $fila) {
+    $consultoresPorProyecto[(int) $fila['proyecto_id']][] = $fila['nombre'];
 }
 
-require __DIR__ . '/config/conexion.php';
-require_once __DIR__ . '/config/validar-sesion.php';
+$ahora = mejrAhora();
+$horasMes = [];
+$horasTotal = [];
 
-// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
-$cuenta = $cuentaSesion;
+$consultaMes = $pdo->prepare(
+    'SELECT proyecto_id, SUM(horas) AS horas FROM registros_horas
+     WHERE fecha >= :inicio AND fecha < :fin GROUP BY proyecto_id'
+);
+$consultaMes->execute([
+    'inicio' => $ahora->format('Y-m-01'),
+    'fin' => $ahora->modify('first day of next month')->format('Y-m-d')
+]);
 
-if (!$cuenta) {
-    $_SESSION = [];
-    header('Location: login.php');
-    exit;
+foreach ($consultaMes as $fila) {
+    $horasMes[(int) $fila['proyecto_id']] = mejrEscalar($fila['horas'], 2);
 }
 
-if ($cuenta['rol'] !== 'administrador') {
-    http_response_code(403);
-    exit(textoClientes('Acceso reservado para administración.'));
+foreach ($pdo->query('SELECT proyecto_id, SUM(horas) AS horas FROM registros_horas GROUP BY proyecto_id') as $fila) {
+    $horasTotal[(int) $fila['proyecto_id']] = mejrEscalar($fila['horas'], 2);
 }
 
-$_SESSION['ultima_actividad'] = time();
+$proyectosPorCliente = [];
 
-function escapar($valor): string {
-    return htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
+foreach ($proyectos as $proyecto) {
+    $proyectosPorCliente[(int) $proyecto['cliente_id']][] = $proyecto;
 }
 
-function textoClientes(string $texto): string {
-    return escapar(mejrTraducir($texto));
-}
+$tituloPagina = 'Clientes y proyectos';
+$seccion = 'clientes';
+$scriptsPagina = ['confirmar.js?v=1'];
+require __DIR__ . '/config/plantilla-inicio.php';
 
-$_SESSION['csrf'] ??= bin2hex(random_bytes(32));
-
-$nombre = '';
-$error = '';
-$creado = $_SESSION['cliente_creado'] ?? '';
-unset($_SESSION['cliente_creado']);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token = $_POST['csrf'] ?? '';
-
-    if (!is_string($token) || !hash_equals($_SESSION['csrf'], $token)) {
-        http_response_code(403);
-        exit(textoClientes('Solicitud no válida. Vuelve a abrir el formulario.'));
-    }
-
-    $nombre = is_string($_POST['nombre'] ?? null)
-        ? trim($_POST['nombre'])
-        : '';
-
-    if (!preg_match('/\A[^\p{C}]{1,150}\z/u', $nombre)) {
-        $error = 'Escribe un nombre de cliente de entre 1 y 150 caracteres, sin saltos de línea.';
-    } else {
-        try {
-            $insertar = $pdo->prepare(
-                'INSERT INTO clientes (nombre, activo) VALUES (:nombre, 1)'
-            );
-            $insertar->execute(['nombre' => $nombre]);
-
-            error_log(
-                'MEJR: administrador ' . (int) $_SESSION['usuario_id'] .
-                ' creó el cliente ' . (int) $pdo->lastInsertId() . '.'
-            );
-
-            $_SESSION['cliente_creado'] = $nombre;
-
-            header('Location: clientes.php', true, 303);
-            exit;
-        } catch (PDOException $excepcion) {
-            if (($excepcion->errorInfo[1] ?? 0) === 1062) {
-                $error = 'Ese cliente ya está registrado.';
-            } else {
-                error_log($excepcion->getMessage());
-                $error = 'No se pudo guardar el cliente. Intenta nuevamente.';
-            }
-        }
-    }
-}
-
-$clientes = $pdo->query(
-    'SELECT nombre, activo FROM clientes ORDER BY nombre, id'
-)->fetchAll();
+$botonEstado = static function (string $accion, string $estadoActual, string $confirmar, string $nombre): string {
+    $activo = $estadoActual === '1';
+    ob_start();
+    ?>
+                        <form method="post" action="<?= escapar($accion) ?>" data-confirmar="<?= texto($confirmar) ?>">
+                          <input type="hidden" name="csrf" value="<?= escapar($_SESSION['csrf']) ?>">
+                          <input type="hidden" name="accion" value="estado">
+                          <input type="hidden" name="estado" value="<?= $activo ? 'desactivar' : 'activar' ?>">
+                          <input type="hidden" name="volver" value="lista">
+                          <button type="submit" class="btn btn-sm <?= $activo ? 'btn-outline-danger' : 'btn-outline-dark' ?>"
+                            aria-label="<?= escapar(mejrTraducir($activo ? 'Desactivar' : 'Activar') . ': ' . $nombre) ?>">
+                            <?= texto($activo ? 'Desactivar' : 'Activar') ?>
+                          </button>
+                        </form>
+    <?php
+    return ob_get_clean();
+};
 ?>
-<!DOCTYPE html>
-<html lang="<?= escapar($idioma) ?>">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title><?= textoClientes('Clientes') ?> | MEJR Timesheet</title>
-
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-    crossorigin="anonymous">
-
-  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
-</head>
-
-<body class="bg-light">
-
-  <header class="bg-white border-bottom">
-    <div class="container py-3 d-flex flex-wrap gap-3 justify-content-between align-items-center">
-      <p class="fw-bold mb-0">MEJR CONSULTING</p>
-
-      <div class="text-end">
-        <p class="fw-semibold mb-0">
-          <?= escapar($cuenta['nombres'] . ' ' . $cuenta['apellidos']) ?>
-        </p>
-
-        <span class="small text-secondary">
-          <?= textoClientes('Administración') ?>
-        </span>
+    <div class="mejr-titulo">
+      <div>
+        <h1 class="h4"><?= texto('Clientes y proyectos') ?></h1>
+        <p class="text-secondary mb-0"><?= texto('Administra clientes, sus proyectos y quién trabaja en cada uno.') ?></p>
       </div>
-    </div>
-  </header>
-
-  <main class="container py-4">
-
-    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-      <a href="panel.php" class="btn btn-outline-secondary">
-        <?= textoClientes('Volver al panel') ?>
-      </a>
-
-      <nav aria-label="<?= textoClientes('Idioma') ?>">
-        <div class="btn-group">
-          <a
-            href="clientes.php?idioma=es"
-            lang="es"
-            class="btn btn-sm <?= $idioma === 'es' ? 'btn-dark' : 'btn-outline-secondary' ?>"
-            <?= $idioma === 'es' ? 'aria-current="true"' : '' ?>>
-            Español
-          </a>
-
-          <a
-            href="clientes.php?idioma=en"
-            lang="en"
-            class="btn btn-sm <?= $idioma === 'en' ? 'btn-dark' : 'btn-outline-secondary' ?>"
-            <?= $idioma === 'en' ? 'aria-current="true"' : '' ?>>
-            English
-          </a>
-        </div>
-      </nav>
+      <a href="cliente.php" class="btn btn-dark"><?= texto('Nuevo cliente') ?></a>
     </div>
 
-    <section class="bg-white border rounded p-4 mb-4">
-      <h1 class="h4">
-        <?= textoClientes('Clientes') ?>
-      </h1>
-
-      <p class="text-secondary">
-        <?= textoClientes('Registra las empresas a las que pertenecen los proyectos.') ?>
-      </p>
-
-      <?php if ($creado !== ''): ?>
-        <div class="alert alert-success" role="status">
-          <?= textoClientes('Cliente registrado:') ?>
-          <?= escapar($creado) ?>.
-        </div>
-      <?php endif; ?>
-
-      <?php if ($error !== ''): ?>
-        <div class="alert alert-danger" role="alert">
-          <?= textoClientes($error) ?>
-        </div>
-      <?php endif; ?>
-
-      <form method="post" action="clientes.php">
-        <input
-          type="hidden"
-          name="csrf"
-          value="<?= escapar($_SESSION['csrf']) ?>">
-
-        <label for="nombre" class="form-label">
-          <?= textoClientes('Nombre del cliente') ?>
-        </label>
-
-        <div class="row g-2">
-          <div class="col-md-8">
-            <input
-              id="nombre"
-              name="nombre"
-              class="form-control"
-              maxlength="150"
-              value="<?= escapar($nombre) ?>"
-              required>
-          </div>
-
-          <div class="col-md-auto">
-            <button type="submit" class="btn btn-dark">
-              <?= textoClientes('Guardar cliente') ?>
-            </button>
-          </div>
-        </div>
-      </form>
-    </section>
-
-    <section class="bg-white border rounded p-4" aria-labelledby="titulo-listado">
-      <h2 id="titulo-listado" class="h5">
-        <?= textoClientes('Clientes registrados') ?>
-      </h2>
-
+    <section class="bg-white border rounded p-4">
       <?php if (!$clientes): ?>
-        <p class="text-secondary mb-0">
-          <?= textoClientes('Todavía no hay clientes registrados.') ?>
-        </p>
+        <p class="text-secondary mb-0"><?= texto('Todavía no hay clientes. Crea el primero con Nuevo cliente.') ?></p>
       <?php else: ?>
         <div class="table-responsive">
           <table class="table align-middle mb-0">
             <thead>
               <tr>
-                <th scope="col"><?= textoClientes('Cliente') ?></th>
-                <th scope="col"><?= textoClientes('Estado') ?></th>
+                <th scope="col"><?= texto('Cliente / Proyecto') ?></th>
+                <th scope="col"><?= texto('Detalle') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Horas del mes') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Horas acumuladas') ?></th>
+                <th scope="col"><?= texto('Estado') ?></th>
+                <th scope="col" class="text-end"><?= texto('Acciones') ?></th>
               </tr>
             </thead>
+            <?php foreach ($clientes as $cliente): ?>
+              <?php
+              $clienteId = (int) $cliente['id'];
+              $suyos = $proyectosPorCliente[$clienteId] ?? [];
+              $activos = count(array_filter($suyos, static fn($p) => (int) $p['activo'] === 1));
+              $mesCliente = 0;
+              $totalCliente = 0;
 
-            <tbody>
-              <?php foreach ($clientes as $cliente): ?>
-                <tr>
-                  <td><?= escapar($cliente['nombre']) ?></td>
+              foreach ($suyos as $proyecto) {
+                  $mesCliente += $horasMes[(int) $proyecto['id']] ?? 0;
+                  $totalCliente += $horasTotal[(int) $proyecto['id']] ?? 0;
+              }
 
+              $fichaCliente = 'cliente.php?id=' . $clienteId;
+              $clienteActivo = (int) $cliente['activo'] === 1;
+              ?>
+              <tbody>
+                <tr class="mejr-fila-grupo">
+                  <td><a href="<?= escapar($fichaCliente) ?>"><?= escapar($cliente['nombre']) ?></a></td>
+                  <td class="small"><?= $activos ?> <?= texto('proyectos activos') ?></td>
+                  <td class="mejr-numero"><?= escapar(mejrHoras($mesCliente)) ?></td>
+                  <td class="mejr-numero"><?= escapar(mejrHoras($totalCliente)) ?></td>
                   <td>
-                    <?= textoClientes(
-                        (int) $cliente['activo'] === 1 ? 'Activo' : 'Inactivo'
-                    ) ?>
+                    <span class="badge <?= $clienteActivo ? 'text-bg-success' : 'text-bg-secondary' ?>">
+                      <?= texto($clienteActivo ? 'Activo' : 'Inactivo') ?>
+                    </span>
+                  </td>
+                  <td class="mejr-col-acciones">
+                    <div class="mejr-acciones">
+                      <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaCliente . '#datos') ?>"><?= texto('Editar') ?></a>
+                      <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaCliente . '#proyectos') ?>"><?= texto('Nuevo proyecto') ?></a>
+                      <a class="btn btn-sm btn-outline-secondary" href="horas-admin.php?cliente_id=<?= $clienteId ?>"><?= texto('Horas') ?></a>
+                      <?= $botonEstado(
+                          $fichaCliente,
+                          (string) $cliente['activo'],
+                          '¿Confirmas el cambio de estado de este cliente? Si lo desactivas, sus consultores dejarán de ver sus proyectos.',
+                          $cliente['nombre']
+                      ) ?>
+                    </div>
                   </td>
                 </tr>
-              <?php endforeach; ?>
-            </tbody>
+
+                <?php if (!$suyos): ?>
+                  <tr class="mejr-fila-hija">
+                    <td colspan="6" class="small text-secondary"><?= texto('Sin proyectos todavía.') ?></td>
+                  </tr>
+                <?php endif; ?>
+
+                <?php foreach ($suyos as $proyecto): ?>
+                  <?php
+                  $proyectoId = (int) $proyecto['id'];
+                  $fichaProyecto = 'proyecto.php?id=' . $proyectoId;
+                  $proyectoActivo = (int) $proyecto['activo'] === 1;
+                  ?>
+                  <tr class="mejr-fila-hija">
+                    <td><a href="<?= escapar($fichaProyecto) ?>"><?= escapar($proyecto['nombre']) ?></a></td>
+                    <td>
+                      <?php if (empty($consultoresPorProyecto[$proyectoId])): ?>
+                        <span class="small text-secondary"><?= texto('Sin consultores') ?></span>
+                      <?php else: ?>
+                        <div class="mejr-etiquetas">
+                          <?php foreach ($consultoresPorProyecto[$proyectoId] as $nombre): ?>
+                            <span class="badge"><?= escapar($nombre) ?></span>
+                          <?php endforeach; ?>
+                        </div>
+                      <?php endif; ?>
+                    </td>
+                    <td class="mejr-numero"><?= escapar(mejrHoras($horasMes[$proyectoId] ?? 0)) ?></td>
+                    <td class="mejr-numero"><?= escapar(mejrHoras($horasTotal[$proyectoId] ?? 0)) ?></td>
+                    <td>
+                      <span class="badge <?= $proyectoActivo ? 'text-bg-success' : 'text-bg-secondary' ?>">
+                        <?= texto($proyectoActivo ? 'Activo' : 'Inactivo') ?>
+                      </span>
+                    </td>
+                    <td class="mejr-col-acciones">
+                      <div class="mejr-acciones">
+                        <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaProyecto . '#datos') ?>"><?= texto('Editar') ?></a>
+                        <a class="btn btn-sm btn-outline-secondary" href="<?= escapar($fichaProyecto . '#consultores') ?>"><?= texto('Consultores') ?></a>
+                        <a class="btn btn-sm btn-outline-secondary" href="horas-admin.php?proyecto_id=<?= $proyectoId ?>"><?= texto('Horas') ?></a>
+                        <?= $botonEstado(
+                            $fichaProyecto,
+                            (string) $proyecto['activo'],
+                            '¿Confirmas el cambio de estado de este proyecto? Si lo desactivas, los consultores dejarán de verlo.',
+                            $proyecto['nombre']
+                        ) ?>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            <?php endforeach; ?>
           </table>
         </div>
       <?php endif; ?>
     </section>
-  </main>
-
-</body>
-</html>
+<?php require __DIR__ . '/config/plantilla-fin.php'; ?>
