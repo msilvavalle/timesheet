@@ -168,8 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261108">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261108">
 
 </head>
 <body class="bg-light mejr-login">

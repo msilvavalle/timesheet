@@ -139,7 +139,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
           <table class="table align-middle mb-0">
             <thead>
               <tr>
-                <th scope="col"><?= texto('Consultor') ?></th>
+                <th scope="col" class="mejr-col-nombre"><?= texto('Consultor') ?></th>
                 <th scope="col"><?= texto('Acceso') ?></th>
                 <th scope="col"><?= texto('Proyectos') ?></th>
                 <th scope="col" class="mejr-numero"><?= texto('Horas del mes') ?></th>
@@ -163,7 +163,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
                       <div class="small text-secondary"><?= escapar($consultor['especialidad']) ?></div>
                     <?php endif; ?>
                   </td>
-                  <td class="text-break">
+                  <td class="mejr-col-acceso">
                     <?php if (empty($consultor['correo'])): ?>
                       <span class="badge text-bg-warning"><?= texto('Correo pendiente') ?></span>
                     <?php else: ?>

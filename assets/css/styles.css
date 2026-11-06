@@ -2,8 +2,13 @@
    página para que el navegador descargue ambas hojas en paralelo.
    La CSP no permite atributos style= ni <style> en las páginas: todo va aquí. */
 
+/* Ancho de trabajo: las tablas de administración necesitan más que .container. */
+body .mejr-ancho { max-width: 1480px; padding-left: 24px; padding-right: 24px; }
+
 /* Barra fija */
-body > header.mejr-barra > .container {
+body > header.mejr-barra > .mejr-ancho {
+  padding-top: 6px;
+  padding-bottom: 6px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -110,10 +115,17 @@ body .mejr-acciones {
   gap: 6px;
 }
 body .mejr-acciones form { margin: 0; }
+body .mejr-acciones .btn-sm { padding: .26rem .5rem; }
+@media (min-width: 1200px) {
+  /* En pantallas anchas las acciones de una fila quedan en una sola línea. */
+  body .mejr-acciones { flex-wrap: nowrap; }
+}
 body .table td.mejr-col-acciones { text-align: right; min-width: 200px; }
 body .mejr-etiquetas { display: flex; flex-wrap: wrap; gap: 4px; }
 body .mejr-etiquetas .badge { font-weight: 500; color: var(--mejr-petrol); background: #eaf4fa; }
 body .mejr-numero { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+body .mejr-col-nombre { min-width: 190px; }
+body .mejr-col-acceso { min-width: 210px; overflow-wrap: anywhere; }
 
 /* Tabla agrupada de clientes y proyectos */
 body .table tr.mejr-fila-grupo td { background: #f3f7f9; font-weight: 500; }
@@ -143,6 +155,7 @@ body .mejr-ficha section { scroll-margin-top: 110px; margin-bottom: 20px; }
 body .mejr-casillas { max-height: 320px; overflow-y: auto; border: 1px solid var(--mejr-line); border-radius: 8px; padding: 8px 12px; }
 
 @media (max-width: 767.98px) {
+  body .mejr-ancho { padding-left: 14px; padding-right: 14px; }
   body .mejr-logo { width: 70px; height: 50px; }
   body .mejr-nav { order: 3; flex-basis: 100%; }
   body .mejr-usuario-nombre { font-size: .9rem; }

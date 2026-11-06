@@ -139,15 +139,15 @@ require __DIR__ . '/config/plantilla-inicio.php';
     <section class="bg-white border rounded p-4 mb-4">
       <form method="get" action="horas-admin.php">
         <div class="row g-3">
-          <div class="col-6 col-md-2">
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
             <label for="desde" class="form-label"><?= texto('Desde') ?></label>
             <input id="desde" name="desde" type="month" class="form-control" value="<?= escapar($periodo['desdeMes']) ?>" required>
           </div>
-          <div class="col-6 col-md-2">
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
             <label for="hasta" class="form-label"><?= texto('Hasta') ?></label>
             <input id="hasta" name="hasta" type="month" class="form-control" value="<?= escapar($periodo['hastaMes']) ?>" required>
           </div>
-          <div class="col-md-4 col-lg-2">
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
             <label for="consultor_id" class="form-label"><?= texto('Consultor') ?></label>
             <select id="consultor_id" name="consultor_id" class="form-select">
               <option value=""><?= texto('Todos los consultores') ?></option>
@@ -158,7 +158,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="col-md-4 col-lg-2">
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
             <label for="cliente_id" class="form-label"><?= texto('Cliente') ?></label>
             <select id="cliente_id" name="cliente_id" class="form-select">
               <option value=""><?= texto('Todos los clientes') ?></option>
@@ -169,7 +169,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="col-md-4 col-lg-2">
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
             <label for="proyecto_id" class="form-label"><?= texto('Proyecto') ?></label>
             <select id="proyecto_id" name="proyecto_id" class="form-select">
               <option value=""><?= texto('Todos los proyectos') ?></option>
@@ -180,7 +180,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="col-md-4 col-lg-2">
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
             <label for="sin_tarifa" class="form-label"><?= texto('Tarifas') ?></label>
             <select id="sin_tarifa" name="sin_tarifa" class="form-select">
               <option value=""><?= texto('Todas') ?></option>

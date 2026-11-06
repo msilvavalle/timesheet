@@ -42,14 +42,14 @@ unset($_SESSION['aviso']);
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261106">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261106">
+  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261108">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261108">
 </head>
 
 <body class="bg-light">
 
   <header class="mejr-barra">
-    <div class="container">
+    <div class="container-fluid mejr-ancho">
       <a class="mejr-logo" href="panel.php">MEJR Consulting</a>
 
       <nav class="mejr-nav" aria-label="<?= texto('Secciones') ?>">
@@ -90,7 +90,7 @@ unset($_SESSION['aviso']);
     </div>
   </header>
 
-  <main class="container py-4">
+  <main class="container-fluid mejr-ancho py-4">
     <?php if ($aviso): ?>
       <div class="alert alert-<?= escapar($aviso['tipo']) ?>" role="status">
         <?= texto($aviso['texto']) ?>
