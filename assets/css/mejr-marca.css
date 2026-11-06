@@ -35,7 +35,7 @@ body.mejr-login header > p.fw-bold {
   overflow: hidden;
   text-indent: -9999px;
   white-space: nowrap;
-  background: #fff url('../img/mejr-logo.jpg') center / contain no-repeat;
+  background: #fff url('../img/mejr-logo.webp') center / contain no-repeat;
 }
 body > header {
   position: sticky;
@@ -123,7 +123,7 @@ body.mejr-panel main.container > section:first-of-type::before {
   bottom: 22px;
   width: 40%;
   border-radius: 9px;
-  background: #e9eef0 url('../img/timesheet.png') center / cover no-repeat;
+  background: #e9eef0 url('../img/timesheet.webp') center / cover no-repeat;
 }
 body.mejr-panel h1.h4 { font-size: clamp(1.55rem, 2.1vw, 1.95rem); margin-bottom: 12px; line-height: 1.25; }
 body.mejr-panel main.container > section:first-of-type > p { margin-bottom: 26px; }
@@ -154,7 +154,7 @@ body.mejr-login main.container > .row {
 body.mejr-login main.container > .row::after {
   content: '';
   align-self: stretch;
-  background: #e9eef0 url('../img/timesheet.png') center / cover no-repeat;
+  background: #e9eef0 url('../img/timesheet.webp') center / cover no-repeat;
 }
 body.mejr-login main.container > .row > [class*='col-'] {
   width: auto;

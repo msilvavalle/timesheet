@@ -1,1 +1,2 @@
-@import url("mejr-marca.css");
+/* Reglas propias del sistema. La marca (mejr-marca.css) se enlaza aparte en cada
+   página para que el navegador descargue ambas hojas en paralelo. */

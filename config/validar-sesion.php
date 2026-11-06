@@ -1,5 +1,7 @@
 <?php
 // Se carga después de conexion.php y de session_start().
+// Si la sesión es válida, deja la cuenta en $cuentaSesion para que la página
+// no tenga que volver a consultarla.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=UTF-8');
@@ -24,7 +26,8 @@ if (!isset($_SESSION['usuario_id'])) {
 
 try {
     $verificarSesion = $pdo->prepare(
-        'SELECT password_hash, activo, rol FROM usuarios WHERE id = :id'
+        'SELECT id, nombres, apellidos, rol, activo, password_hash
+         FROM usuarios WHERE id = :id'
     );
     $verificarSesion->execute(['id' => $_SESSION['usuario_id']]);
     $cuentaSesion = $verificarSesion->fetch();

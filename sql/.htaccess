@@ -1,0 +1,2 @@
+# Migraciones de la base: se ejecutan a mano, nunca por HTTP.
+Require all denied
