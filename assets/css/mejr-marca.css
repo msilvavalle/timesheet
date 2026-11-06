@@ -24,8 +24,7 @@ body a:not(.btn):hover { color: #174457; }
 body h1, body h2, body h3 { color: var(--mejr-petrol); font-weight: 600; }
 body .text-secondary { color: var(--mejr-muted) !important; }
 
-/* El texto original de la marca permanece disponible para lectores de pantalla. */
-body > header > .container > p.fw-bold,
+/* Logo del ingreso. El texto original de la marca permanece disponible para lectores de pantalla. */
 body.mejr-login header > p.fw-bold {
   display: block;
   flex: 0 0 auto;
@@ -45,8 +44,7 @@ body > header {
   border-bottom: 1px solid var(--mejr-line) !important;
 }
 body > header > .container { padding-top: 5px !important; padding-bottom: 5px !important; }
-body > header .fw-semibold { color: var(--mejr-petrol); }
-body main.container { padding-bottom: 40px !important; }
+body main.container, body main.mejr-ancho { padding-bottom: 40px !important; }
 body main section.bg-white {
   border-color: var(--mejr-line) !important;
   border-radius: 12px !important;
@@ -105,31 +103,6 @@ body .table thead th { color: var(--mejr-petrol); background-color: #f3f7f9; fon
 body .table td { padding-top: 13px; padding-bottom: 13px; }
 body details summary { color: var(--mejr-petrol); }
 
-/* Una sola clase en panel.php cubre administracion y consultores. */
-body.mejr-panel main.container { padding-top: 32px !important; }
-body.mejr-panel main.container > section:first-of-type {
-  position: relative;
-  isolation: isolate;
-  min-height: 420px;
-  padding: 42px calc(43% + 28px) 36px 36px !important;
-  border-top: 3px solid var(--mejr-orange) !important;
-}
-body.mejr-panel main.container > section:first-of-type::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  top: 22px;
-  right: 22px;
-  bottom: 22px;
-  width: 40%;
-  border-radius: 9px;
-  background: #e9eef0 url('../img/timesheet.webp') center / cover no-repeat;
-}
-body.mejr-panel h1.h4 { font-size: clamp(1.55rem, 2.1vw, 1.95rem); margin-bottom: 12px; line-height: 1.25; }
-body.mejr-panel main.container > section:first-of-type > p { margin-bottom: 26px; }
-body.mejr-panel main.container > section:first-of-type > a.btn { margin-right: 5px; margin-bottom: 10px !important; }
-body.mejr-panel main.container > section:first-of-type > form { margin-top: 16px; }
-
 /* Ingreso inspirado en la referencia: formulario a la izquierda e imagen a la derecha. */
 body.mejr-login main.container {
   min-height: 100vh;
@@ -173,27 +146,11 @@ body.mejr-login footer { font-size: .76rem !important; }
 @media (max-width: 991.98px) {
   body.mejr-login main.container { max-width: 930px; }
   body.mejr-login main.container > .row > [class*='col-'] { padding: 26px; }
-  body.mejr-panel main.container > section:first-of-type { padding-left: 28px !important; }
 }
 @media (max-width: 767.98px) {
-  body > header > .container > p.fw-bold { width: 108px; height: 78px; }
   body > header > .container { gap: 12px !important; }
-  body > header .fw-semibold { font-size: .92rem; }
-  body > header .small { font-size: .78rem; }
   body main.container { padding-top: 22px !important; }
   body main section.bg-white { padding: 22px !important; }
-  body.mejr-panel main.container > section:first-of-type {
-    min-height: 0;
-    padding: 232px 22px 26px !important;
-  }
-  body.mejr-panel main.container > section:first-of-type::before {
-    inset: 18px 18px auto;
-    width: auto;
-    height: 188px;
-    background-position: center 55%;
-  }
-  body.mejr-panel h1.h4 { font-size: 1.6rem; }
-  body.mejr-panel main.container > section:first-of-type > a.btn { margin-right: 4px; }
   body.mejr-login main.container { max-width: 540px; padding: 20px 14px !important; }
   body.mejr-login main.container > .row { grid-template-columns: 1fr; min-height: 0 !important; }
   body.mejr-login main.container > .row::after { display: none; }
@@ -205,6 +162,4 @@ body.mejr-login footer { font-size: .76rem !important; }
 }
 @media print {
   body > header { position: static; }
-  body.mejr-panel main.container > section:first-of-type::before { display: none; }
-  body.mejr-panel main.container > section:first-of-type { min-height: 0; padding: 24px !important; }
 }

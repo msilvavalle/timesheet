@@ -1,2 +1,166 @@
 /* Reglas propias del sistema. La marca (mejr-marca.css) se enlaza aparte en cada
-   página para que el navegador descargue ambas hojas en paralelo. */
+   página para que el navegador descargue ambas hojas en paralelo.
+   La CSP no permite atributos style= ni <style> en las páginas: todo va aquí. */
+
+/* Ancho de trabajo: las tablas de administración necesitan más que .container. */
+body .mejr-ancho { max-width: 1480px; padding-left: 24px; padding-right: 24px; }
+
+/* Barra fija */
+body > header.mejr-barra > .mejr-ancho {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+body .mejr-logo {
+  flex: 0 0 auto;
+  width: 92px;
+  height: 66px;
+  overflow: hidden;
+  text-indent: -9999px;
+  white-space: nowrap;
+  background: url('../img/mejr-logo.webp') center / contain no-repeat;
+}
+body .mejr-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+body .mejr-nav a {
+  padding: .5rem .85rem;
+  border-radius: 7px;
+  color: var(--mejr-muted);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+body .mejr-nav a:hover { background: #eaf4fa; color: var(--mejr-petrol); }
+body .mejr-nav a[aria-current="page"] { background: var(--mejr-petrol); color: #fff; }
+body .mejr-cuenta { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+/* Menú de la cuenta con <details>, sin JavaScript */
+body .mejr-usuario { position: relative; }
+body .mejr-usuario > summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: .3rem 1.4rem .3rem .6rem;
+  border-radius: 7px;
+  line-height: 1.25;
+  list-style: none;
+  cursor: pointer;
+  position: relative;
+}
+body .mejr-usuario > summary::-webkit-details-marker { display: none; }
+body .mejr-usuario > summary::after {
+  content: '';
+  position: absolute;
+  right: .55rem;
+  top: 50%;
+  border: 5px solid transparent;
+  border-top-color: var(--mejr-petrol);
+  border-bottom: 0;
+}
+body .mejr-usuario > summary:hover { background: #eaf4fa; }
+body .mejr-usuario-nombre { font-weight: 600; color: var(--mejr-petrol); }
+body .mejr-usuario-rol { font-size: .78rem; color: var(--mejr-muted); }
+body .mejr-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 1030;
+  min-width: 220px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--mejr-line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(31, 91, 115, .12);
+}
+body .mejr-menu form { margin: 0; }
+body .mejr-menu a,
+body .mejr-menu button {
+  display: block;
+  width: 100%;
+  padding: .55rem .75rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--mejr-ink);
+  text-align: left;
+  text-decoration: none;
+}
+body .mejr-menu a:hover,
+body .mejr-menu button:hover { background: #eaf4fa; }
+
+/* Título de página: texto a la izquierda, una sola acción principal a la derecha */
+body .mejr-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+body .mejr-titulo h1 { margin-bottom: 4px; }
+
+/* Acciones por fila, en línea y a la derecha */
+body .mejr-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+body .mejr-acciones form { margin: 0; }
+body .mejr-acciones .btn-sm { padding: .26rem .5rem; }
+@media (min-width: 1200px) {
+  /* En pantallas anchas las acciones de una fila quedan en una sola línea. */
+  body .mejr-acciones { flex-wrap: nowrap; }
+}
+body .table td.mejr-col-acciones { text-align: right; min-width: 200px; }
+body .mejr-etiquetas { display: flex; flex-wrap: wrap; gap: 4px; }
+body .mejr-etiquetas .badge { font-weight: 500; color: var(--mejr-petrol); background: #eaf4fa; }
+body .mejr-numero { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+body .mejr-col-nombre { min-width: 190px; }
+body .mejr-col-acceso { min-width: 210px; overflow-wrap: anywhere; }
+
+/* Tabla agrupada de clientes y proyectos */
+body .table tr.mejr-fila-grupo td { background: #f3f7f9; font-weight: 500; }
+body .table tr.mejr-fila-hija td:first-child { padding-left: 2rem; }
+
+/* Tarjetas del tablero */
+body .mejr-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+body .mejr-kpi {
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid var(--mejr-line);
+  border-radius: 12px;
+}
+body .mejr-kpi-etiqueta { font-size: .85rem; color: var(--mejr-muted); margin-bottom: 4px; }
+body .mejr-kpi-valor { font-size: 1.45rem; font-weight: 600; color: var(--mejr-petrol); line-height: 1.2; }
+body .mejr-kpi-nota { font-size: .8rem; color: var(--mejr-muted); margin-top: 4px; }
+body meter.mejr-barra-dato { width: 100%; min-width: 120px; height: 14px; }
+
+/* Secciones de una ficha (consultor, cliente, proyecto) */
+body .mejr-ficha-indice { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+body .mejr-ficha section { scroll-margin-top: 110px; margin-bottom: 20px; }
+body .mejr-casillas { max-height: 320px; overflow-y: auto; border: 1px solid var(--mejr-line); border-radius: 8px; padding: 8px 12px; }
+
+@media (max-width: 767.98px) {
+  body .mejr-ancho { padding-left: 14px; padding-right: 14px; }
+  body .mejr-logo { width: 70px; height: 50px; }
+  body .mejr-nav { order: 3; flex-basis: 100%; }
+  body .mejr-usuario-nombre { font-size: .9rem; }
+  body .table td.mejr-col-acciones { min-width: 160px; }
+}
+@media print {
+  body .mejr-nav, body .mejr-cuenta, body .mejr-acciones { display: none; }
+}

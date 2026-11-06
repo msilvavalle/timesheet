@@ -1,505 +1,307 @@
 <?php
-session_name('mejr_timesheet');
-session_start([
-    'use_strict_mode' => true,
-    'gc_maxlifetime' => 1800,
-    'use_only_cookies' => true,
-    'cookie_httponly' => true,
-    'cookie_samesite' => 'Lax',
-    'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'
-]);
-
-header('Cache-Control: no-store');
-
-require_once __DIR__ . '/config/idioma.php';
+// Horas registradas por los consultores, con filtros, montos en US$ según la
+// tarifa vigente en la fecha de cada registro, y Excel. Solo lectura.
+$rolPagina = 'administrador';
+require __DIR__ . '/config/arranque.php';
+require_once __DIR__ . '/config/tarifas.php';
 
 $traducciones += [
-    'Idioma' => 'Language',
-    'Horas registradas' => 'Time entries',
-    'Panel de administración' => 'Administration dashboard',
-    'Acceso reservado para administración.' => 'Access restricted to administrators.',
-    'Mes no válido. Vuelve a abrir Horas registradas.' => 'Invalid month. Open Time entries again.',
-    'Filtro no válido. Vuelve a abrir Horas registradas.' => 'Invalid filter. Open Time entries again.',
-    'Volver al panel' => 'Back to dashboard',
-    'Resumen mensual' => 'Monthly summary',
-    'Consulta las horas de los consultores por mes, cliente y proyecto.' => 'View consultants’ hours by month, client and project.',
-    'Mes' => 'Month',
-    'Consultor' => 'Consultant',
-    'Cliente' => 'Client',
-    'Proyecto' => 'Project',
+    'Período no válido. Usa meses entre 1000 y 9998, con "hasta" igual o posterior a "desde" y un máximo de 36 meses.' => 'Invalid period. Use months between 1000 and 9998, with "to" on or after "from", up to 36 months.',
+    'Filtro no válido. Vuelve a abrir Horas.' => 'Invalid filter. Open Hours again.',
+    'Horas registradas por los consultores, con su valor en dólares según las tarifas vigentes en cada fecha.' => 'Hours logged by consultants, valued in US dollars with the rates in force on each date.',
+    'Desde' => 'From',
+    'Hasta' => 'To',
     'Todos los consultores' => 'All consultants',
     'Todos los clientes' => 'All clients',
     'Todos los proyectos' => 'All projects',
-    'Consultar' => 'View report',
-    'Descargar Excel' => 'Download Excel',
+    'Tarifas' => 'Rates',
+    'Todas' => 'All',
+    'Sin tarifa de cliente' => 'Missing client rate',
+    'Sin tarifa de consultor' => 'Missing consultant rate',
+    'Consultar' => 'View',
     'Restablecer filtros' => 'Reset filters',
-    'Registros de' => 'Entries for',
-    'Total de horas según los filtros:' => 'Total hours matching the filters:',
-    'horas' => 'hours',
-    'Cantidad de registros:' => 'Number of entries:',
-    'No hay registros para el mes y los filtros seleccionados.' => 'No entries match the selected month and filters.',
-    'Fecha' => 'Date',
-    'Horas' => 'Hours',
-    'Descripción' => 'Description'
+    'Registros' => 'Entries',
+    'Ingreso' => 'Revenue',
+    'Costo' => 'Cost',
+    'Margen' => 'Margin',
+    'Incompleto: hay horas sin tarifa.' => 'Incomplete: some hours have no rate.',
+    'Tarifa cliente' => 'Client rate',
+    'Tarifa consultor' => 'Consultant rate',
+    'No hay registros para el período y los filtros seleccionados.' => 'No entries match the selected period and filters.',
+    'Demasiados registros para un Excel (máximo 10.000). Acota el período o los filtros.' => 'Too many entries for one Excel file (maximum 10,000). Narrow the period or the filters.'
 ];
 
-if (
-    !isset($_SESSION['usuario_id']) ||
-    time() - ($_SESSION['ultima_actividad'] ?? 0) > 1800
-) {
-    $_SESSION = [];
-    header('Location: login.php');
-    exit;
-}
+$periodo = mejrPeriodoMeses($_GET);
 
-require __DIR__ . '/config/conexion.php';
-require_once __DIR__ . '/config/validar-sesion.php';
-
-// validar-sesion.php ya leyó y validó la cuenta de esta sesión.
-$cuenta = $cuentaSesion;
-
-if (!$cuenta) {
-    $_SESSION = [];
-    header('Location: login.php');
-    exit;
-}
-
-if ($cuenta['rol'] !== 'administrador') {
-    http_response_code(403);
-    exit(textoHorasAdmin('Acceso reservado para administración.'));
-}
-
-$_SESSION['ultima_actividad'] = time();
-
-function escapar($valor): string
-{
-    return htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
-}
-
-function textoHorasAdmin(string $texto): string
-{
-    return escapar(mejrTraducir($texto));
-}
-
-$zona = new DateTimeZone('America/Santiago');
-
-$mes = $_GET['mes']
-    ?? (new DateTimeImmutable('now', $zona))->format('Y-m');
-
-if (
-    !is_string($mes) ||
-    !preg_match('/\A[0-9]{4}-(0[1-9]|1[0-2])\z/', $mes) ||
-    $mes < '1000-01' ||
-    $mes > '9998-12'
-) {
+if ($periodo === null) {
     http_response_code(400);
-    exit(textoHorasAdmin('Mes no válido. Vuelve a abrir Horas registradas.'));
+    exit(texto('Período no válido. Usa meses entre 1000 y 9998, con "hasta" igual o posterior a "desde" y un máximo de 36 meses.'));
 }
-
-$inicio = new DateTimeImmutable($mes . '-01', $zona);
-$fin = $inicio->modify('+1 month');
 
 $filtros = [];
 
 foreach (['consultor_id', 'cliente_id', 'proyecto_id'] as $campo) {
     $valor = $_GET[$campo] ?? '';
-
-    if (!is_string($valor)) {
-        http_response_code(400);
-        exit(textoHorasAdmin('Filtro no válido. Vuelve a abrir Horas registradas.'));
-    }
-
-    $id = $valor === ''
-        ? null
-        : filter_var($valor, FILTER_VALIDATE_INT, [
-            'options' => [
-                'min_range' => 1,
-                'max_range' => 4294967295
-            ]
-        ]);
+    $id = $valor === '' ? null : validarId($valor);
 
     if ($id === false) {
         http_response_code(400);
-        exit(textoHorasAdmin('Filtro no válido. Vuelve a abrir Horas registradas.'));
+        exit(texto('Filtro no válido. Vuelve a abrir Horas.'));
     }
 
     $filtros[$campo] = $id;
 }
 
+$sinTarifa = $_GET['sin_tarifa'] ?? '';
+
+if (!in_array($sinTarifa, ['', 'cliente', 'consultor'], true)) {
+    http_response_code(400);
+    exit(texto('Filtro no válido. Vuelve a abrir Horas.'));
+}
+
+[$sqlValorizados, $parametros] = mejrSqlValorizados(
+    $periodo['desde']->format('Y-m-d'),
+    $periodo['fin']->format('Y-m-d'),
+    $filtros
+);
+
+$sql = "SELECT v.*, u.nombres, u.apellidos, c.nombre AS cliente, p.nombre AS proyecto
+        FROM ($sqlValorizados) v
+        INNER JOIN usuarios u ON u.id = v.consultor_id
+        INNER JOIN proyectos p ON p.id = v.proyecto_id
+        INNER JOIN clientes c ON c.id = v.cliente_id";
+
+if ($sinTarifa !== '') {
+    $sql .= $sinTarifa === 'cliente' ? ' WHERE v.tarifa_cliente IS NULL' : ' WHERE v.tarifa_consultor IS NULL';
+}
+
+$sql .= ' ORDER BY v.fecha DESC, u.apellidos, u.nombres, v.id DESC';
+
+$consulta = $pdo->prepare($sql);
+$consulta->execute($parametros);
+$registros = $consulta->fetchAll();
+
+$totales = ['horas' => 0, 'ingreso' => 0, 'costo' => 0, 'sinCobro' => 0, 'sinPago' => 0];
+
+foreach ($registros as $indice => $registro) {
+    $centesimas = mejrEscalar($registro['horas'], 2);
+    $tarifaCliente = $registro['tarifa_cliente'] === null ? null : (int) $registro['tarifa_cliente'];
+    $tarifaConsultor = $registro['tarifa_consultor'] === null ? null : (int) $registro['tarifa_consultor'];
+
+    $registros[$indice]['centesimas'] = $centesimas;
+    $registros[$indice]['ingreso'] = mejrMontoExacto($centesimas, $tarifaCliente);
+    $registros[$indice]['costo'] = mejrMontoExacto($centesimas, $tarifaConsultor);
+
+    $totales['horas'] += $centesimas;
+    $totales['ingreso'] += $registros[$indice]['ingreso'] ?? 0;
+    $totales['costo'] += $registros[$indice]['costo'] ?? 0;
+    $totales['sinCobro'] += $tarifaCliente === null ? 1 : 0;
+    $totales['sinPago'] += $tarifaConsultor === null ? 1 : 0;
+}
+
+$incompleto = $totales['sinCobro'] > 0 || $totales['sinPago'] > 0;
+
 $consultores = $pdo->query(
-    "SELECT u.id, u.nombres, u.apellidos, u.usuario
+    "SELECT u.id, u.nombres, u.apellidos
      FROM usuarios u
-     WHERE u.rol = 'consultor'
-        OR EXISTS (
-            SELECT 1
-            FROM registros_horas r
-            WHERE r.consultor_id = u.id
-        )
+     WHERE u.rol = 'consultor' OR EXISTS (SELECT 1 FROM registros_horas r WHERE r.consultor_id = u.id)
      ORDER BY u.apellidos, u.nombres, u.id"
 )->fetchAll();
-
-$clientes = $pdo->query(
-    'SELECT id, nombre FROM clientes ORDER BY nombre, id'
-)->fetchAll();
-
+$clientes = $pdo->query('SELECT id, nombre FROM clientes ORDER BY nombre, id')->fetchAll();
 $proyectos = $pdo->query(
     'SELECT p.id, p.nombre, c.nombre AS cliente
-     FROM proyectos p
-     INNER JOIN clientes c ON c.id = p.cliente_id
+     FROM proyectos p INNER JOIN clientes c ON c.id = p.cliente_id
      ORDER BY c.nombre, p.nombre, p.id'
 )->fetchAll();
 
-$sql = 'SELECT r.fecha, r.horas, r.descripcion, r.consultor_id,
-               u.nombres, u.apellidos,
-               c.nombre AS cliente, p.nombre AS proyecto
-        FROM registros_horas r
-        INNER JOIN usuarios u ON u.id = r.consultor_id
-        INNER JOIN proyectos p ON p.id = r.proyecto_id
-        INNER JOIN clientes c ON c.id = p.cliente_id
-        WHERE r.fecha >= :inicio AND r.fecha < :fin';
-
-$parametros = [
-    'inicio' => $inicio->format('Y-m-d'),
-    'fin' => $fin->format('Y-m-d')
-];
-
-$columnas = [
-    'consultor_id' => 'r.consultor_id',
-    'cliente_id' => 'c.id',
-    'proyecto_id' => 'r.proyecto_id'
-];
-
-foreach ($columnas as $campo => $columna) {
-    if ($filtros[$campo] !== null) {
-        $sql .= ' AND ' . $columna . ' = :' . $campo;
-        $parametros[$campo] = $filtros[$campo];
-    }
-}
-
-$sql .= ' ORDER BY r.fecha DESC, u.apellidos, u.nombres, r.id DESC';
-
-$consultaRegistros = $pdo->prepare($sql);
-$consultaRegistros->execute($parametros);
-$registros = $consultaRegistros->fetchAll();
-
-$totalCentesimas = 0;
-
-foreach ($registros as $registro) {
-    $totalCentesimas += (int) str_replace('.', '', $registro['horas']);
-}
-
 if (($_GET['exportar'] ?? '') === 'excel') {
-    require __DIR__ . '/config/exportar-horas.php';
+    if (count($registros) > 10000) {
+        http_response_code(400);
+        exit(texto('Demasiados registros para un Excel (máximo 10.000). Acota el período o los filtros.'));
+    }
 
-    descargarHorasExcel(
-        $registros,
-        $totalCentesimas,
-        $inicio->format('m/Y')
-    );
+    // El Excel dice qué filtros tiene y si los montos están incompletos.
+    $nombresFiltro = [
+        'consultor_id' => ['Consultor', array_column(array_map(
+            static fn($c) => ['id' => $c['id'], 'n' => $c['nombres'] . ' ' . $c['apellidos']], $consultores
+        ), 'n', 'id')],
+        'cliente_id' => ['Cliente', array_column($clientes, 'nombre', 'id')],
+        'proyecto_id' => ['Proyecto', array_column(array_map(
+            static fn($p) => ['id' => $p['id'], 'n' => $p['cliente'] . ' / ' . $p['nombre']], $proyectos
+        ), 'n', 'id')],
+    ];
+    $detalle = [$periodo['etiqueta']];
+
+    foreach ($nombresFiltro as $campo => [$etiqueta, $nombres]) {
+        if ($filtros[$campo] !== null) {
+            $detalle[] = mejrTraducir($etiqueta) . ': ' . ($nombres[$filtros[$campo]] ?? '#' . $filtros[$campo]);
+        }
+    }
+
+    if ($sinTarifa !== '') {
+        $detalle[] = mejrTraducir($sinTarifa === 'cliente' ? 'Sin tarifa de cliente' : 'Sin tarifa de consultor');
+    }
+
+    if ($incompleto) {
+        $detalle[] = mejrTraducir('Incompleto: hay horas sin tarifa.');
+    }
+
+    require __DIR__ . '/config/exportar-horas.php';
+    descargarHorasExcel($registros, $totales['horas'], implode(' · ', $detalle), true);
 }
 
-$parametrosIdioma = ['mes' => $mes] + $filtros;
+$parametrosVista = ['desde' => $periodo['desdeMes'], 'hasta' => $periodo['hastaMes']]
+    + array_filter($filtros, static fn($valor) => $valor !== null)
+    + ($sinTarifa !== '' ? ['sin_tarifa' => $sinTarifa] : []);
 
-$urlEspanol = 'horas-admin.php?' . http_build_query(
-    $parametrosIdioma + ['idioma' => 'es']
-);
-
-$urlIngles = 'horas-admin.php?' . http_build_query(
-    $parametrosIdioma + ['idioma' => 'en']
-);
+$tituloPagina = 'Horas';
+$seccion = 'horas';
+$parametrosIdioma = $parametrosVista;
+require __DIR__ . '/config/plantilla-inicio.php';
 ?>
-<!DOCTYPE html>
-<html lang="<?= escapar($idioma) ?>">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title><?= textoHorasAdmin('Horas registradas') ?> | MEJR Timesheet</title>
-
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-    crossorigin="anonymous">
-
-  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261105">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261105">
-</head>
-
-<body class="bg-light">
-
-  <header class="bg-white border-bottom">
-    <div class="container py-3 d-flex flex-wrap gap-3 justify-content-between align-items-center">
-      <p class="fw-bold mb-0">MEJR CONSULTING</p>
-
-      <div class="text-end">
-        <p class="fw-semibold mb-0">
-          <?= escapar($cuenta['nombres'] . ' ' . $cuenta['apellidos']) ?>
-        </p>
-
-        <span class="small text-secondary">
-          <?= textoHorasAdmin('Panel de administración') ?>
-        </span>
+    <div class="mejr-titulo">
+      <div>
+        <h1 class="h4"><?= texto('Horas') ?></h1>
+        <p class="text-secondary mb-0"><?= texto('Horas registradas por los consultores, con su valor en dólares según las tarifas vigentes en cada fecha.') ?></p>
       </div>
-    </div>
-  </header>
-
-  <main class="container py-4">
-
-    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
-      <div class="d-flex flex-wrap gap-2">
-        <a href="panel.php" class="btn btn-outline-secondary">
-          <?= textoHorasAdmin('Volver al panel') ?>
-        </a>
-
-        <a href="resumen-mensual.php" class="btn btn-outline-dark">
-          <?= textoHorasAdmin('Resumen mensual') ?>
-        </a>
-      </div>
-
-      <nav aria-label="<?= textoHorasAdmin('Idioma') ?>">
-        <div class="btn-group">
-          <a
-            href="<?= escapar($urlEspanol) ?>"
-            lang="es"
-            class="btn btn-sm <?= $idioma === 'es' ? 'btn-dark' : 'btn-outline-secondary' ?>"
-            <?= $idioma === 'es' ? 'aria-current="true"' : '' ?>>
-            Español
-          </a>
-
-          <a
-            href="<?= escapar($urlIngles) ?>"
-            lang="en"
-            class="btn btn-sm <?= $idioma === 'en' ? 'btn-dark' : 'btn-outline-secondary' ?>"
-            <?= $idioma === 'en' ? 'aria-current="true"' : '' ?>>
-            English
-          </a>
-        </div>
-      </nav>
+      <a class="btn btn-outline-dark"
+        href="<?= escapar('horas-admin.php?' . http_build_query($parametrosVista + ['exportar' => 'excel'])) ?>"><?= texto('Descargar Excel') ?></a>
     </div>
 
     <section class="bg-white border rounded p-4 mb-4">
-      <h1 class="h4">
-        <?= textoHorasAdmin('Horas registradas') ?>
-      </h1>
-
-      <p class="text-secondary">
-        <?= textoHorasAdmin('Consulta las horas de los consultores por mes, cliente y proyecto.') ?>
-      </p>
-
       <form method="get" action="horas-admin.php">
-        <input
-          type="hidden"
-          name="idioma"
-          value="<?= escapar($idioma) ?>">
-
         <div class="row g-3">
-          <div class="col-md-3">
-            <label for="mes" class="form-label">
-              <?= textoHorasAdmin('Mes') ?>
-            </label>
-
-            <input
-              id="mes"
-              name="mes"
-              type="month"
-              class="form-control"
-              min="1000-01"
-              max="9998-12"
-              value="<?= escapar($mes) ?>"
-              required>
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
+            <label for="desde" class="form-label"><?= texto('Desde') ?></label>
+            <input id="desde" name="desde" type="month" class="form-control" value="<?= escapar($periodo['desdeMes']) ?>" required>
           </div>
-
-          <div class="col-md-3">
-            <label for="consultor_id" class="form-label">
-              <?= textoHorasAdmin('Consultor') ?>
-            </label>
-
-            <select
-              id="consultor_id"
-              name="consultor_id"
-              class="form-select">
-
-              <option value="">
-                <?= textoHorasAdmin('Todos los consultores') ?>
-              </option>
-
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
+            <label for="hasta" class="form-label"><?= texto('Hasta') ?></label>
+            <input id="hasta" name="hasta" type="month" class="form-control" value="<?= escapar($periodo['hastaMes']) ?>" required>
+          </div>
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
+            <label for="consultor_id" class="form-label"><?= texto('Consultor') ?></label>
+            <select id="consultor_id" name="consultor_id" class="form-select">
+              <option value=""><?= texto('Todos los consultores') ?></option>
               <?php foreach ($consultores as $consultor): ?>
-                <option
-                  value="<?= escapar($consultor['id']) ?>"
-                  <?= $filtros['consultor_id'] === (int) $consultor['id'] ? 'selected' : '' ?>>
-                  <?= escapar(
-                      $consultor['nombres'] . ' ' .
-                      $consultor['apellidos'] . ' (' .
-                      $consultor['usuario'] . ')'
-                  ) ?>
+                <option value="<?= escapar($consultor['id']) ?>" <?= $filtros['consultor_id'] === (int) $consultor['id'] ? 'selected' : '' ?>>
+                  <?= escapar($consultor['apellidos'] . ', ' . $consultor['nombres']) ?>
                 </option>
               <?php endforeach; ?>
             </select>
           </div>
-
-          <div class="col-md-3">
-            <label for="cliente_id" class="form-label">
-              <?= textoHorasAdmin('Cliente') ?>
-            </label>
-
-            <select
-              id="cliente_id"
-              name="cliente_id"
-              class="form-select">
-
-              <option value="">
-                <?= textoHorasAdmin('Todos los clientes') ?>
-              </option>
-
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
+            <label for="cliente_id" class="form-label"><?= texto('Cliente') ?></label>
+            <select id="cliente_id" name="cliente_id" class="form-select">
+              <option value=""><?= texto('Todos los clientes') ?></option>
               <?php foreach ($clientes as $cliente): ?>
-                <option
-                  value="<?= escapar($cliente['id']) ?>"
-                  <?= $filtros['cliente_id'] === (int) $cliente['id'] ? 'selected' : '' ?>>
+                <option value="<?= escapar($cliente['id']) ?>" <?= $filtros['cliente_id'] === (int) $cliente['id'] ? 'selected' : '' ?>>
                   <?= escapar($cliente['nombre']) ?>
                 </option>
               <?php endforeach; ?>
             </select>
           </div>
-
-          <div class="col-md-3">
-            <label for="proyecto_id" class="form-label">
-              <?= textoHorasAdmin('Proyecto') ?>
-            </label>
-
-            <select
-              id="proyecto_id"
-              name="proyecto_id"
-              class="form-select">
-
-              <option value="">
-                <?= textoHorasAdmin('Todos los proyectos') ?>
-              </option>
-
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
+            <label for="proyecto_id" class="form-label"><?= texto('Proyecto') ?></label>
+            <select id="proyecto_id" name="proyecto_id" class="form-select">
+              <option value=""><?= texto('Todos los proyectos') ?></option>
               <?php foreach ($proyectos as $proyecto): ?>
-                <option
-                  value="<?= escapar($proyecto['id']) ?>"
-                  <?= $filtros['proyecto_id'] === (int) $proyecto['id'] ? 'selected' : '' ?>>
+                <option value="<?= escapar($proyecto['id']) ?>" <?= $filtros['proyecto_id'] === (int) $proyecto['id'] ? 'selected' : '' ?>>
                   <?= escapar($proyecto['cliente'] . ' / ' . $proyecto['nombre']) ?>
                 </option>
               <?php endforeach; ?>
             </select>
           </div>
+          <div class="col-sm-6 col-lg-3 col-xxl-2">
+            <label for="sin_tarifa" class="form-label"><?= texto('Tarifas') ?></label>
+            <select id="sin_tarifa" name="sin_tarifa" class="form-select">
+              <option value=""><?= texto('Todas') ?></option>
+              <option value="cliente" <?= $sinTarifa === 'cliente' ? 'selected' : '' ?>><?= texto('Sin tarifa de cliente') ?></option>
+              <option value="consultor" <?= $sinTarifa === 'consultor' ? 'selected' : '' ?>><?= texto('Sin tarifa de consultor') ?></option>
+            </select>
+          </div>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mt-3">
-          <button type="submit" class="btn btn-dark">
-            <?= textoHorasAdmin('Consultar') ?>
-          </button>
-
-          <button
-            type="submit"
-            name="exportar"
-            value="excel"
-            class="btn btn-outline-dark">
-            <?= textoHorasAdmin('Descargar Excel') ?>
-          </button>
-
-          <a
-            href="horas-admin.php?idioma=<?= escapar($idioma) ?>"
-            class="btn btn-outline-secondary">
-            <?= textoHorasAdmin('Restablecer filtros') ?>
-          </a>
+          <button type="submit" class="btn btn-dark"><?= texto('Consultar') ?></button>
+          <a href="horas-admin.php" class="btn btn-outline-secondary"><?= texto('Restablecer filtros') ?></a>
         </div>
       </form>
     </section>
 
-    <section
-      class="bg-white border rounded p-4"
-      aria-labelledby="titulo-registros">
+    <div class="mejr-kpis">
+      <div class="mejr-kpi">
+        <div class="mejr-kpi-etiqueta"><?= texto('Horas') ?> · <?= escapar($periodo['etiqueta']) ?></div>
+        <div class="mejr-kpi-valor" id="total-horas"><?= escapar(mejrHoras($totales['horas'])) ?></div>
+        <div class="mejr-kpi-nota"><?= texto('Registros') ?>: <?= count($registros) ?></div>
+      </div>
+      <div class="mejr-kpi">
+        <div class="mejr-kpi-etiqueta"><?= texto('Ingreso') ?></div>
+        <div class="mejr-kpi-valor" id="total-ingreso"><?= escapar(mejrUsdExacto($totales['ingreso'])) ?></div>
+      </div>
+      <div class="mejr-kpi">
+        <div class="mejr-kpi-etiqueta"><?= texto('Costo') ?></div>
+        <div class="mejr-kpi-valor" id="total-costo"><?= escapar(mejrUsdExacto($totales['costo'])) ?></div>
+      </div>
+      <div class="mejr-kpi">
+        <div class="mejr-kpi-etiqueta"><?= texto('Margen') ?></div>
+        <div class="mejr-kpi-valor" id="total-margen"><?= escapar(mejrUsdExacto($totales['ingreso'] - $totales['costo'])) ?></div>
+        <?php if ($incompleto): ?>
+          <div class="mejr-kpi-nota"><span class="badge text-bg-warning"><?= texto('Incompleto: hay horas sin tarifa.') ?></span></div>
+        <?php endif; ?>
+      </div>
+    </div>
 
-      <h2 id="titulo-registros" class="h5">
-        <?= textoHorasAdmin('Registros de') ?>
-        <?= escapar($inicio->format('m/Y')) ?>
-      </h2>
-
-      <p>
-        <?= textoHorasAdmin('Total de horas según los filtros:') ?>
-
-        <strong id="total-horas">
-          <?= escapar(number_format(
-              $totalCentesimas / 100,
-              2,
-              $idioma === 'en' ? '.' : ',',
-              $idioma === 'en' ? ',' : '.'
-          )) ?>
-          <?= textoHorasAdmin('horas') ?>
-        </strong>
-      </p>
-
-      <p class="small text-secondary">
-        <?= textoHorasAdmin('Cantidad de registros:') ?>
-        <?= count($registros) ?>
-      </p>
-
+    <section class="bg-white border rounded p-4">
       <?php if (!$registros): ?>
-        <p class="text-secondary mb-0">
-          <?= textoHorasAdmin('No hay registros para el mes y los filtros seleccionados.') ?>
-        </p>
+        <p class="text-secondary mb-0"><?= texto('No hay registros para el período y los filtros seleccionados.') ?></p>
       <?php else: ?>
         <div class="table-responsive">
           <table class="table align-middle mb-0">
-
             <thead>
               <tr>
-                <th scope="col"><?= textoHorasAdmin('Fecha') ?></th>
-                <th scope="col"><?= textoHorasAdmin('Consultor') ?></th>
-                <th scope="col"><?= textoHorasAdmin('Cliente') ?></th>
-                <th scope="col"><?= textoHorasAdmin('Proyecto') ?></th>
-                <th scope="col"><?= textoHorasAdmin('Horas') ?></th>
-                <th scope="col"><?= textoHorasAdmin('Descripción') ?></th>
+                <th scope="col"><?= texto('Fecha') ?></th>
+                <th scope="col"><?= texto('Consultor') ?></th>
+                <th scope="col"><?= texto('Cliente') ?></th>
+                <th scope="col"><?= texto('Proyecto') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Horas') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Tarifa cliente') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Ingreso') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Tarifa consultor') ?></th>
+                <th scope="col" class="mejr-numero"><?= texto('Costo') ?></th>
+                <th scope="col"><?= texto('Descripción') ?></th>
               </tr>
             </thead>
-
             <tbody>
               <?php foreach ($registros as $registro): ?>
                 <tr>
-                  <td>
-                    <?= escapar(
-                        DateTimeImmutable::createFromFormat(
-                            '!Y-m-d',
-                            $registro['fecha']
-                        )->format($idioma === 'en' ? 'm/d/Y' : 'd/m/Y')
-                    ) ?>
+                  <td><?= escapar(mejrFecha($registro['fecha'])) ?></td>
+                  <td><a href="consultor.php?id=<?= (int) $registro['consultor_id'] ?>"><?= escapar($registro['nombres'] . ' ' . $registro['apellidos']) ?></a></td>
+                  <td><?= escapar($registro['cliente']) ?></td>
+                  <td><a href="proyecto.php?id=<?= (int) $registro['proyecto_id'] ?>"><?= escapar($registro['proyecto']) ?></a></td>
+                  <td class="mejr-numero"><?= escapar(mejrHoras($registro['centesimas'])) ?></td>
+                  <td class="mejr-numero">
+                    <?php if ($registro['tarifa_cliente'] === null): ?>
+                      <a class="badge text-bg-warning" href="cliente.php?id=<?= (int) $registro['cliente_id'] ?>#tarifa"><?= texto('Sin tarifa') ?></a>
+                    <?php else: ?>
+                      <?= escapar(mejrUsd((int) $registro['tarifa_cliente'])) ?>
+                    <?php endif; ?>
                   </td>
-
-                  <td>
-                    <?= escapar($registro['nombres'] . ' ' . $registro['apellidos']) ?>
+                  <td class="mejr-numero"><?= escapar(mejrUsdExacto($registro['ingreso'])) ?></td>
+                  <td class="mejr-numero">
+                    <?php if ($registro['tarifa_consultor'] === null): ?>
+                      <a class="badge text-bg-warning" href="consultor.php?id=<?= (int) $registro['consultor_id'] ?>#tarifa"><?= texto('Sin tarifa') ?></a>
+                    <?php else: ?>
+                      <?= escapar(mejrUsd((int) $registro['tarifa_consultor'])) ?>
+                    <?php endif; ?>
                   </td>
-
-                  <td>
-                    <?= escapar($registro['cliente']) ?>
-                  </td>
-
-                  <td>
-                    <?= escapar($registro['proyecto']) ?>
-                  </td>
-
-                  <td>
-                    <?= escapar(
-                        $idioma === 'en'
-                            ? $registro['horas']
-                            : str_replace('.', ',', $registro['horas'])
-                    ) ?>
-                  </td>
-
-                  <td class="text-break">
-                    <?= nl2br(escapar($registro['descripcion'])) ?>
-                  </td>
+                  <td class="mejr-numero"><?= escapar(mejrUsdExacto($registro['costo'])) ?></td>
+                  <td class="text-break"><?= nl2br(escapar($registro['descripcion'])) ?></td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
-
           </table>
         </div>
       <?php endif; ?>
     </section>
-  </main>
-
-</body>
-</html>
+<?php require __DIR__ . '/config/plantilla-fin.php'; ?>

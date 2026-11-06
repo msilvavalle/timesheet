@@ -25,5 +25,6 @@
 # Conservar la migración del correo
 !002_agregar_correo.sql
 !003_intentos_login.sql
+!004_tarifas.sql
 /prueba-conexion.php
 /prueba.php
