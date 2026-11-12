@@ -47,8 +47,9 @@ unset($_SESSION['aviso']);
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
     crossorigin="anonymous">
 
-  <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261108">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261108">
+    <link rel="stylesheet" href="assets/css/styles.css?v=20261111-asignaciones">
+    <link rel="stylesheet" href="assets/css/proyectos-asignados.css?v=2">
+    <link rel="stylesheet" href="assets/css/mejr-marca.css">
 </head>
 
 <body class="bg-light">
