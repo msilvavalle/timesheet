@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Plain PHP 8.0+ (no framework, no router, no templating engine), one file per screen at the repo root, sharing a common bootstrap and layout from `config/`.
 - MySQL/MariaDB via PDO (code checks MySQL error `1062` for duplicate keys). SQL is kept portable to MySQL 5.7/8 and MariaDB 10.x: no `LATERAL`, no window functions, `GROUP BY` lists every non-aggregated column.
-- Bootstrap 5.3.8 **CSS only** from jsDelivr (with SRI); no Bootstrap JS. `assets/css/mejr-marca.css` (brand) + `assets/css/styles.css` (app layout), both linked from `config/plantilla-inicio.php`.
+- Bootstrap 5.3.8 **CSS only** from jsDelivr (with SRI); no Bootstrap JS. `assets/css/mejr-marca.css` (brand) + `assets/css/styles.css` (app layout), both linked from `config/plantilla-inicio.php` in that order (brand first).
 - Only Composer dependency: `phpoffice/phpspreadsheet` (Excel export).
 - Developed on **MAMP (macOS)** at `/Applications/MAMP/htdocs/NAMP/`, served at `https://localhost:8890/NAMP/` (HTTP on 8888).
 
@@ -80,6 +80,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
 - Passwords: `password_hash(PASSWORD_DEFAULT)`, 12–72 bytes. Login re-hashes when `password_needs_rehash()`, and runs one bcrypt for unknown accounts so timing doesn't reveal them.
 - **No inline JavaScript or `style=` attributes**: the CSP in `.htaccess` is `script-src 'self'` and `style-src 'self' https://cdn.jsdelivr.net`. Scripts go in `js/` (listed in `$scriptsPagina`), styles in `assets/css/styles.css`; use `<meter>` or classes instead of inline widths.
 - Static assets are cached (CSS/JS 7 days, images 30 days): bump the `?v=` of a CSS or JS link when you change it.
+- The assignment cards of `consultor.php` and `proyecto.php` share one component (`.mejr-asignacion*` in `styles.css`). Style both through it, without IDs or `!important`, and keep the card classes `bg-white border rounded p-4` so they match the other cards.
 
 ## Gotchas
 

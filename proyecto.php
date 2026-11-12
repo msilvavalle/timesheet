@@ -251,7 +251,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
         </form>
       </section>
 
-      <section id="consultores" class="mejr-asignacion border rounded p-4" aria-labelledby="titulo-consultores">
+      <section id="consultores" class="bg-white border rounded p-4 mejr-asignacion" aria-labelledby="titulo-consultores">
         <h2 id="titulo-consultores" class="h5 mejr-asignacion-titulo"><span class="mejr-asignacion-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17 4a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-4-4"/></svg></span><?= texto('Consultores asignados') ?></h2>
         <p class="text-secondary"><?= texto('Marca los consultores que pueden registrar horas en este proyecto. Desmarcar no borra sus horas.') ?></p>
 

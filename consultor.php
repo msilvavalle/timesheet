@@ -42,6 +42,7 @@ $traducciones += [
     'Marca los proyectos en los que este consultor puede registrar horas. Desmarcar no borra sus horas.' => 'Select the projects this consultant can log hours on. Unselecting does not delete their hours.',
     'Sin coincidencias.' => 'No matches.',
     'Buscar proyecto' => 'Find a project',
+    'Proyecto o cliente' => 'Project or client',
     'No hay proyectos activos. Créalos en Clientes y proyectos.' => 'There are no active projects. Create them in Clients and projects.',
     'Guardar proyectos' => 'Save projects',
     'Horas de' => 'Hours for',
@@ -534,7 +535,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
       </section>
 
       <?php if ($consultor): ?>
-        <section id="proyectos" class="mejr-asignacion border rounded p-4" aria-labelledby="titulo-proyectos">
+        <section id="proyectos" class="bg-white border rounded p-4 mejr-asignacion" aria-labelledby="titulo-proyectos">
           <h2 id="titulo-proyectos" class="h5 mejr-asignacion-titulo"><span class="mejr-asignacion-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M2 5h7l2 2h11v13H2z"/></svg></span><?= texto('Proyectos asignados') ?></h2>
           <p class="text-secondary"><?= texto('Marca los proyectos en los que este consultor puede registrar horas. Desmarcar no borra sus horas.') ?></p>
 
@@ -551,11 +552,11 @@ require __DIR__ . '/config/plantilla-inicio.php';
 
               <div class="mb-3" data-filtro-caja hidden>
                 <label for="buscar-proyecto" class="form-label"><?= texto('Buscar proyecto') ?></label>
-                <input id="buscar-proyecto" type="search" class="form-control" data-filtro="lista-proyectos" aria-controls="lista-proyectos" autocomplete="off">
+                <input id="buscar-proyecto" type="search" class="form-control" data-filtro="lista-proyectos" aria-controls="lista-proyectos" autocomplete="off" placeholder="<?= texto('Proyecto o cliente') ?>">
               </div>
 
               <p class="small text-secondary mb-2" data-filtro-vacio role="status" hidden><?= texto('Sin coincidencias.') ?></p>
-            <div id="lista-proyectos" class="mejr-casillas">
+              <div id="lista-proyectos" class="mejr-casillas">
                 <?php $grupoActual = null; ?>
                 <?php foreach ($opciones as $indice => $opcion): ?>
                   <?php if ($opcion['grupo'] !== $grupoActual): ?>
