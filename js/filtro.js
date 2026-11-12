@@ -8,8 +8,8 @@ document.querySelectorAll('input[data-filtro]').forEach((entrada) => {
 
   const normalizar = (texto) => texto
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('es')
+    .replace(/\p{M}/gu, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 
@@ -17,7 +17,7 @@ document.querySelectorAll('input[data-filtro]').forEach((entrada) => {
     const palabras = normalizar(entrada.value).split(/\s+/).filter(Boolean);
 
     lista.querySelectorAll('[data-filtro-item]').forEach((item) => {
-      const texto = normalizar(item.dataset.filtroTexto ?? item.textContent);
+      const texto = normalizar(item.textContent);
       item.hidden = !palabras.every((palabra) => texto.includes(palabra));
     });
 

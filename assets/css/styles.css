@@ -224,12 +224,15 @@ body .mejr-asignacion .mejr-casillas {
   float: none;
   margin: 0;
   transform: translateY(-50%);
-  accent-color: var(--mejr-petrol);
 }
 
 .mejr-asignacion .mejr-asignacion-opcion .form-check-input:checked {
   background-color: var(--mejr-petrol);
   border-color: var(--mejr-petrol);
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-input:focus {
+  box-shadow: none;
 }
 
 .mejr-asignacion .mejr-asignacion-opcion .form-check-label {

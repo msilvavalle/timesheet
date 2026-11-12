@@ -21,7 +21,7 @@ $traducciones += [
     'Consultores asignados guardados.' => 'Assigned consultants saved.',
     'Marca los consultores que pueden registrar horas en este proyecto. Desmarcar no borra sus horas.' => 'Select the consultants who can log hours on this project. Unselecting does not delete their hours.',
     'Sin coincidencias.' => 'No matches.',
-    'Nombre o apellido' => 'First or last name',
+    'Nombre o especialidad' => 'Name or specialty',
     'Buscar consultor' => 'Find a consultant',
     'No hay consultores activos. Créalos en Consultores.' => 'There are no active consultants. Create them in Consultants.',
     'Guardar consultores' => 'Save consultants',
@@ -268,13 +268,13 @@ require __DIR__ . '/config/plantilla-inicio.php';
 
             <div class="mb-3" data-filtro-caja hidden>
               <label for="buscar-consultor" class="form-label"><?= texto('Buscar consultor') ?></label>
-              <input id="buscar-consultor" type="search" class="form-control" data-filtro="lista-consultores" aria-controls="lista-consultores" autocomplete="off" placeholder="<?= texto('Nombre o apellido') ?>">
+              <input id="buscar-consultor" type="search" class="form-control" data-filtro="lista-consultores" aria-controls="lista-consultores" autocomplete="off" placeholder="<?= texto('Nombre o especialidad') ?>">
             </div>
 
             <p class="small text-secondary mb-2" data-filtro-vacio role="status" hidden><?= texto('Sin coincidencias.') ?></p>
             <div id="lista-consultores" class="mejr-casillas">
               <?php foreach ($opciones as $opcion): ?>
-                <div class="form-check mejr-asignacion-opcion" data-filtro-item data-filtro-texto="<?= escapar($opcion['nombre']) ?>">
+                <div class="form-check mejr-asignacion-opcion" data-filtro-item>
                   <input type="hidden" name="mostrados[]" value="<?= escapar($opcion['id']) ?>">
                   <input class="form-check-input" type="checkbox" name="consultores[]"
                     id="consultor-<?= escapar($opcion['id']) ?>" value="<?= escapar($opcion['id']) ?>"
