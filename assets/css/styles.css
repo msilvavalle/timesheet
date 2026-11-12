@@ -164,3 +164,81 @@ body .mejr-casillas { max-height: 320px; overflow-y: auto; border: 1px solid var
 @media print {
   body .mejr-nav, body .mejr-cuenta, body .mejr-acciones { display: none; }
 }
+/* Fichas de asignaciones del panel de administración */
+body .mejr-asignacion {
+  background: linear-gradient(145deg, #fff, #eef6f9);
+  box-shadow: 0 10px 26px rgba(25, 81, 105, .09);
+}
+
+.mejr-asignacion-titulo {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.mejr-asignacion-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: .8rem;
+  color: #1c566d;
+  background: linear-gradient(150deg, #fff, #dcecf3);
+  box-shadow: 0 3px 8px rgba(25, 81, 105, .13);
+}
+
+.mejr-asignacion-icono svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+body .mejr-asignacion .mejr-casillas {
+  padding: .75rem;
+  background: rgba(255, 255, 255, .7);
+}
+
+.mejr-asignacion-opcion.form-check {
+  position: relative;
+  margin-bottom: .4rem;
+  padding-left: 0;
+}
+
+.mejr-asignacion-opcion .form-check-input {
+  position: absolute;
+  top: .85rem;
+  left: .85rem;
+  margin: 0;
+}
+
+.mejr-asignacion-opcion .form-check-label {
+  display: block;
+  padding: .65rem .75rem .65rem 2.4rem;
+  border: 1px solid var(--mejr-line);
+  border-radius: .65rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mejr-asignacion-opcion .form-check-input:checked + label {
+  background: #e2f1f7;
+  border-color: #80aebe;
+}
+
+.mejr-asignacion-opcion .form-check-input:focus-visible + label {
+  outline: 2px solid #1c566d;
+  outline-offset: 2px;
+}
+
+.mejr-asignacion [hidden] {
+  display: none !important;
+}
+
+.mejr-asignacion-opcion .form-check-label:hover {
+  border-color: #6198ac;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mejr-asignacion-opcion .form-check-label {
+    transition: background-color .18s ease, border-color .18s ease;
+  }
+}
