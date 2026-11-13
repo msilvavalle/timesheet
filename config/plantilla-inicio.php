@@ -7,6 +7,11 @@
 //   $seccion           sección marcada en la barra ('tablero', 'horas', 'consultores',
 //                      'clientes', 'mis-horas') o null
 //   $parametrosIdioma  parámetros GET que se conservan al cambiar de idioma (opcional)
+//
+// Esta plantilla corre en el ámbito de la página, no dentro de una función: lo que
+// asigna aquí le llega a la página. Por eso las variables del bucle de la barra
+// llevan el sufijo «Seccion» (con `$nombre` pisaba el campo Nombre de cliente.php
+// y de proyecto.php).
 
 $seccionesBarra = $esAdmin
     ? [
@@ -43,7 +48,7 @@ unset($_SESSION['aviso']);
     crossorigin="anonymous">
 
   <link rel="stylesheet" href="assets/css/mejr-marca.css?v=20261108">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261108">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261112">
 </head>
 
 <body class="bg-light">
@@ -53,10 +58,10 @@ unset($_SESSION['aviso']);
       <a class="mejr-logo" href="panel.php">MEJR Consulting</a>
 
       <nav class="mejr-nav" aria-label="<?= texto('Secciones') ?>">
-        <?php foreach ($seccionesBarra as $clave => [$destino, $nombre]): ?>
-          <a href="<?= escapar($destino) ?>"
-            <?= ($seccion ?? null) === $clave ? 'aria-current="page"' : '' ?>>
-            <?= texto($nombre) ?>
+        <?php foreach ($seccionesBarra as $claveSeccion => [$destinoSeccion, $nombreSeccion]): ?>
+          <a href="<?= escapar($destinoSeccion) ?>"
+            <?= ($seccion ?? null) === $claveSeccion ? 'aria-current="page"' : '' ?>>
+            <?= texto($nombreSeccion) ?>
           </a>
         <?php endforeach; ?>
       </nav>

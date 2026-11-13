@@ -20,6 +20,8 @@ $traducciones += [
     'Consultores asignados' => 'Assigned consultants',
     'Consultores asignados guardados.' => 'Assigned consultants saved.',
     'Marca los consultores que pueden registrar horas en este proyecto. Desmarcar no borra sus horas.' => 'Select the consultants who can log hours on this project. Unselecting does not delete their hours.',
+    'Sin coincidencias.' => 'No matches.',
+    'Nombre o especialidad' => 'Name or specialty',
     'Buscar consultor' => 'Find a consultant',
     'No hay consultores activos. Créalos en Consultores.' => 'There are no active consultants. Create them in Consultants.',
     'Guardar consultores' => 'Save consultants',
@@ -186,7 +188,7 @@ $activo = (int) $proyecto['activo'] === 1;
 $tituloPagina = 'Clientes y proyectos';
 $seccion = 'clientes';
 $parametrosIdioma = ['id' => $proyectoId];
-$scriptsPagina = ['filtro.js?v=1', 'confirmar.js?v=1'];
+$scriptsPagina = ['filtro.js?v=2', 'confirmar.js?v=1'];
 require __DIR__ . '/config/plantilla-inicio.php';
 ?>
     <nav aria-label="breadcrumb">
@@ -249,8 +251,8 @@ require __DIR__ . '/config/plantilla-inicio.php';
         </form>
       </section>
 
-      <section id="consultores" class="bg-white border rounded p-4" aria-labelledby="titulo-consultores">
-        <h2 id="titulo-consultores" class="h5"><?= texto('Consultores asignados') ?></h2>
+      <section id="consultores" class="bg-white border rounded p-4 mejr-asignacion" aria-labelledby="titulo-consultores">
+        <h2 id="titulo-consultores" class="h5 mejr-asignacion-titulo"><span class="mejr-asignacion-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17 4a4 4 0 0 1 0 8 M22 21v-2a4 4 0 0 0-4-4"/></svg></span><?= texto('Consultores asignados') ?></h2>
         <p class="text-secondary"><?= texto('Marca los consultores que pueden registrar horas en este proyecto. Desmarcar no borra sus horas.') ?></p>
 
         <?php if ($errores['consultores'] !== ''): ?>
@@ -264,14 +266,15 @@ require __DIR__ . '/config/plantilla-inicio.php';
             <input type="hidden" name="csrf" value="<?= escapar($_SESSION['csrf']) ?>">
             <input type="hidden" name="accion" value="consultores">
 
-            <div class="mb-2" data-filtro-caja hidden>
+            <div class="mb-3" data-filtro-caja hidden>
               <label for="buscar-consultor" class="form-label"><?= texto('Buscar consultor') ?></label>
-              <input id="buscar-consultor" type="search" class="form-control" data-filtro="lista-consultores" autocomplete="off">
+              <input id="buscar-consultor" type="search" class="form-control" data-filtro="lista-consultores" aria-controls="lista-consultores" autocomplete="off" placeholder="<?= texto('Nombre o especialidad') ?>">
             </div>
 
+            <p class="small text-secondary mb-2" data-filtro-vacio role="status" hidden><?= texto('Sin coincidencias.') ?></p>
             <div id="lista-consultores" class="mejr-casillas">
               <?php foreach ($opciones as $opcion): ?>
-                <div class="form-check" data-filtro-item>
+                <div class="form-check mejr-asignacion-opcion" data-filtro-item>
                   <input type="hidden" name="mostrados[]" value="<?= escapar($opcion['id']) ?>">
                   <input class="form-check-input" type="checkbox" name="consultores[]"
                     id="consultor-<?= escapar($opcion['id']) ?>" value="<?= escapar($opcion['id']) ?>"

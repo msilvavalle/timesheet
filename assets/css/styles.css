@@ -164,3 +164,106 @@ body .mejr-casillas { max-height: 320px; overflow-y: auto; border: 1px solid var
 @media print {
   body .mejr-nav, body .mejr-cuenta, body .mejr-acciones { display: none; }
 }
+
+/* Fichas de asignaciones: «Proyectos asignados» (consultor.php) y «Consultores asignados»
+   (proyecto.php). Un solo diseño para las dos. La tarjeta conserva las clases de Bootstrap
+   (bg-white border rounded p-4) para verse igual que las demás; aquí solo se estiliza el
+   interior. Sin IDs ni !important: el orden de las hojas es mejr-marca.css y luego esta. */
+.mejr-asignacion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mejr-asignacion-icono {
+  display: inline-grid;
+  flex: 0 0 38px;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: var(--mejr-petrol);
+  background: #eaf4f8;
+}
+
+.mejr-asignacion-icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mejr-asignacion input[data-filtro] {
+  max-width: 26rem;
+}
+
+body .mejr-asignacion .mejr-casillas {
+  max-height: min(25rem, 60vh);
+  padding: 6px;
+  background: #f8fafb;
+  border-radius: 10px;
+}
+
+.mejr-asignacion [data-filtro-grupo] > .fw-semibold {
+  padding: 6px 10px;
+  color: var(--mejr-muted);
+  background: #eef3f6;
+  border-radius: 6px;
+  font-size: .78rem;
+}
+
+.mejr-asignacion .mejr-asignacion-opcion {
+  position: relative;
+  min-height: 0;
+  margin: 2px 0;
+  padding-left: 0;
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-input {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  float: none;
+  margin: 0;
+  transform: translateY(-50%);
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-input:checked {
+  background-color: var(--mejr-petrol);
+  border-color: var(--mejr-petrol);
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-input:focus {
+  box-shadow: none;
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-label {
+  display: block;
+  padding: 10px 10px 10px 38px;
+  border: 1px solid transparent;
+  border-left-width: 3px;
+  border-radius: 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-label:hover {
+  background: #edf3f6;
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-input:checked + .form-check-label {
+  color: #19465a;
+  background: #e8f3f8;
+  border-left-color: var(--mejr-petrol);
+  font-weight: 600;
+}
+
+.mejr-asignacion .mejr-asignacion-opcion .form-check-input:focus-visible + .form-check-label {
+  outline: 2px solid var(--mejr-petrol);
+  outline-offset: 2px;
+}
+
+@media (max-width: 575.98px) {
+  .mejr-asignacion .mejr-asignacion-opcion .form-check-label {
+    padding-block: 12px;
+  }
+}

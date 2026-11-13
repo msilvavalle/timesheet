@@ -40,7 +40,9 @@ $traducciones += [
     'La cuenta cambió. Vuelve a Consultores y selecciónala nuevamente.' => 'The account changed. Return to Consultants and select it again.',
     'Proyectos asignados guardados.' => 'Assigned projects saved.',
     'Marca los proyectos en los que este consultor puede registrar horas. Desmarcar no borra sus horas.' => 'Select the projects this consultant can log hours on. Unselecting does not delete their hours.',
+    'Sin coincidencias.' => 'No matches.',
     'Buscar proyecto' => 'Find a project',
+    'Proyecto o cliente' => 'Project or client',
     'No hay proyectos activos. Créalos en Clientes y proyectos.' => 'There are no active projects. Create them in Clients and projects.',
     'Guardar proyectos' => 'Save projects',
     'Horas de' => 'Hours for',
@@ -413,7 +415,7 @@ $activo = $consultor && (int) $consultor['activo'] === 1;
 $tituloPagina = $consultor ? 'Consultores' : 'Nuevo consultor';
 $seccion = 'consultores';
 $parametrosIdioma = $consultor ? ['id' => $consultorId] : [];
-$scriptsPagina = $consultor ? ['filtro.js?v=1', 'ver-clave.js?v=1', 'confirmar.js?v=1'] : ['mostrar-clave.js?v=2'];
+$scriptsPagina = $consultor ? ['filtro.js?v=2', 'ver-clave.js?v=1', 'confirmar.js?v=1'] : ['mostrar-clave.js?v=2'];
 require __DIR__ . '/config/plantilla-inicio.php';
 ?>
     <nav aria-label="breadcrumb">
@@ -533,8 +535,8 @@ require __DIR__ . '/config/plantilla-inicio.php';
       </section>
 
       <?php if ($consultor): ?>
-        <section id="proyectos" class="bg-white border rounded p-4" aria-labelledby="titulo-proyectos">
-          <h2 id="titulo-proyectos" class="h5"><?= texto('Proyectos asignados') ?></h2>
+        <section id="proyectos" class="bg-white border rounded p-4 mejr-asignacion" aria-labelledby="titulo-proyectos">
+          <h2 id="titulo-proyectos" class="h5 mejr-asignacion-titulo"><span class="mejr-asignacion-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path d="M2 5h7l2 2h11v13H2z"/></svg></span><?= texto('Proyectos asignados') ?></h2>
           <p class="text-secondary"><?= texto('Marca los proyectos en los que este consultor puede registrar horas. Desmarcar no borra sus horas.') ?></p>
 
           <?php if ($errores['proyectos']): ?>
@@ -548,11 +550,12 @@ require __DIR__ . '/config/plantilla-inicio.php';
               <input type="hidden" name="csrf" value="<?= escapar($_SESSION['csrf']) ?>">
               <input type="hidden" name="accion" value="proyectos">
 
-              <div class="mb-2" data-filtro-caja hidden>
+              <div class="mb-3" data-filtro-caja hidden>
                 <label for="buscar-proyecto" class="form-label"><?= texto('Buscar proyecto') ?></label>
-                <input id="buscar-proyecto" type="search" class="form-control" data-filtro="lista-proyectos" autocomplete="off">
+                <input id="buscar-proyecto" type="search" class="form-control" data-filtro="lista-proyectos" aria-controls="lista-proyectos" autocomplete="off" placeholder="<?= texto('Proyecto o cliente') ?>">
               </div>
 
+              <p class="small text-secondary mb-2" data-filtro-vacio role="status" hidden><?= texto('Sin coincidencias.') ?></p>
               <div id="lista-proyectos" class="mejr-casillas">
                 <?php $grupoActual = null; ?>
                 <?php foreach ($opciones as $indice => $opcion): ?>
@@ -562,7 +565,7 @@ require __DIR__ . '/config/plantilla-inicio.php';
                     <div data-filtro-grupo class="mb-2">
                       <p class="fw-semibold mb-1 mt-2"><?= escapar($grupoActual) ?></p>
                   <?php endif; ?>
-                  <div class="form-check" data-filtro-item>
+                  <div class="form-check mejr-asignacion-opcion" data-filtro-item>
                     <input type="hidden" name="mostrados[]" value="<?= escapar($opcion['id']) ?>">
                     <input class="form-check-input" type="checkbox" name="proyectos[]"
                       id="proyecto-<?= escapar($opcion['id']) ?>" value="<?= escapar($opcion['id']) ?>"
